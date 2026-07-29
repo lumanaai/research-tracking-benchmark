@@ -1,0 +1,17 @@
+{
+    "track_thresh": 0.5,
+    "track_buffer": 45,
+    "match_thresh": 0.85,
+    "min_box_area": 10,
+    "reset_velocity_offset_occ": 5,
+    "reset_pos_offset_occ": 3,
+    "enlarge_bbox_occ": 1.2,
+    "dampen_motion_occ": 0.87,
+    "active_occ_to_lost_thresh": 15,
+    "init_iou_suppress": 0.8,
+
+    "ROIs": {},
+    "roi_repair_max_gap": 15,
+    "dir_window_N": 10,
+    "dir_margin_deg": 2.0
+}

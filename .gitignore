@@ -1,0 +1,70 @@
+# Virtualenv (symlink to SSD; never commit)
+.venv
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.log
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Model weights & checkpoints (keep on SSD / models/ locally)
+models/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.weights
+*.pkl
+*.h5
+
+# Media / caches that may land under the repo
+*.mp4
+*.avi
+*.mov
+*.wav
+*.npz
+.cache/
+wandb/
+runs/
+outputs/
+tmp/
+temp/
+
+# Upstream tracker clones (nested git repos; clone separately)
+FastTracker/
+OC_SORT/
+HybridSORT/
+
+# Local secrets / env
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+secrets/

@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Run every wired tracker on every benchmark (full default split) with GT dets.
+# Usage (from project root):
+#   ./scripts/batch/run_all_gt_trackers.sh
+#   BENCHMARKS="fasttracker_bench ua_detrac" TRACKERS="ocsort" ./scripts/batch/run_all_gt_trackers.sh
+#   DRY_RUN=1 ./scripts/batch/run_all_gt_trackers.sh
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+
+PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
+if [[ ! -x "$PYTHON" ]]; then
+  echo "ERROR: Python not found at $PYTHON" >&2
+  exit 1
+fi
+
+# Default: all benchmarks × motion trackers (skip traffictrack stub).
+BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort})
+DETECTOR="${DETECTOR:-gt}"
+# Used when DETECTOR=yolov8 (e.g. cuda:0). Ignored for gt/existing.
+DEVICE="${DEVICE:-}"
+# Optional YOLO weights override (default: mot_pipeline DEFAULT_YOLO_WEIGHTS).
+WEIGHTS="${WEIGHTS:-}"
+DRY_RUN="${DRY_RUN:-0}"
+# If 1, abort on first failed job; otherwise continue and report at the end.
+FAIL_FAST="${FAIL_FAST:-0}"
+
+TS="$(date +%Y%m%d_%H%M%S)"
+LOG_DIR="${LOG_DIR:-/media/7TBSSD/data/tracking/experiments/_logs}"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/run_all_${DETECTOR}_${TS}.log"
+
+ok=0
+fail=0
+skip=0
+declare -a FAILED_JOBS=()
+
+echo "=== all trackers × all benchmarks (detector=$DETECTOR) ===" | tee "$LOG"
+echo "root=$ROOT" | tee -a "$LOG"
+echo "python=$PYTHON" | tee -a "$LOG"
+echo "benchmarks: ${BENCHMARKS[*]}" | tee -a "$LOG"
+echo "trackers:   ${TRACKERS[*]}" | tee -a "$LOG"
+if [[ -n "$WEIGHTS" ]]; then
+  echo "weights:    $WEIGHTS" | tee -a "$LOG"
+fi
+if [[ -n "$DEVICE" ]]; then
+  echo "device:     $DEVICE" | tee -a "$LOG"
+fi
+echo "log:        $LOG" | tee -a "$LOG"
+echo | tee -a "$LOG"
+
+# Ensure MOT layouts exist once per benchmark (full default split).
+for bench in "${BENCHMARKS[@]}"; do
+  echo "[convert] $bench" | tee -a "$LOG"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    echo "  DRY_RUN: $PYTHON -m mot_pipeline.run convert --benchmark $bench" | tee -a "$LOG"
+    continue
+  fi
+  if ! "$PYTHON" -m mot_pipeline.run convert --benchmark "$bench" >>"$LOG" 2>&1; then
+    echo "  FAILED convert $bench" | tee -a "$LOG"
+    FAILED_JOBS+=("convert:$bench")
+    fail=$((fail + 1))
+    if [[ "$FAIL_FAST" == "1" ]]; then
+      echo "FAIL_FAST=1 — stopping." | tee -a "$LOG"
+      exit 1
+    fi
+  fi
+done
+echo | tee -a "$LOG"
+
+for bench in "${BENCHMARKS[@]}"; do
+  for tracker in "${TRACKERS[@]}"; do
+    run_id="${bench}_${tracker}_${DETECTOR}_${TS}"
+    echo "[run] bench=$bench tracker=$tracker detector=$DETECTOR run_id=$run_id" | tee -a "$LOG"
+
+    if [[ "$tracker" == "traffictrack" ]]; then
+      echo "  SKIP stub tracker traffictrack" | tee -a "$LOG"
+      skip=$((skip + 1))
+      continue
+    fi
+
+    cmd=(
+      "$PYTHON" -m mot_pipeline.run all
+      --benchmark "$bench"
+      --tracker "$tracker"
+      --detector "$DETECTOR"
+      --run-id "$run_id"
+    )
+    if [[ -n "$DEVICE" ]]; then
+      cmd+=(--device "$DEVICE")
+    fi
+    if [[ -n "$WEIGHTS" ]]; then
+      cmd+=(--weights "$WEIGHTS")
+    fi
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+      echo "  DRY_RUN: ${cmd[*]}" | tee -a "$LOG"
+      continue
+    fi
+
+    if "${cmd[@]}" >>"$LOG" 2>&1; then
+      echo "  OK $run_id" | tee -a "$LOG"
+      ok=$((ok + 1))
+    else
+      echo "  FAILED $run_id (see $LOG)" | tee -a "$LOG"
+      FAILED_JOBS+=("$run_id")
+      fail=$((fail + 1))
+      if [[ "$FAIL_FAST" == "1" ]]; then
+        echo "FAIL_FAST=1 — stopping." | tee -a "$LOG"
+        exit 1
+      fi
+    fi
+  done
+done
+
+echo | tee -a "$LOG"
+echo "=== done ===" | tee -a "$LOG"
+echo "ok=$ok fail=$fail skip=$skip" | tee -a "$LOG"
+if ((${#FAILED_JOBS[@]})); then
+  echo "failed jobs:" | tee -a "$LOG"
+  for j in "${FAILED_JOBS[@]}"; do
+    echo "  - $j" | tee -a "$LOG"
+  done
+fi
+echo "findings: /media/7TBSSD/data/tracking/experiments/_findings/<bench>/<tracker>/" | tee -a "$LOG"
+echo "log: $LOG" | tee -a "$LOG"
+
+exit $((fail > 0 ? 1 : 0))

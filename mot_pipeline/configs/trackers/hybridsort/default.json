@@ -1,0 +1,15 @@
+{
+  "det_thresh": 0.5,
+  "track_thresh": 0.5,
+  "max_age": 30,
+  "min_hits": 3,
+  "iou_threshold": 0.3,
+  "delta_t": 3,
+  "asso_func": "iou",
+  "inertia": 0.2,
+  "use_byte": true,
+  "TCM_first_step": true,
+  "TCM_byte_step": true,
+  "TCM_first_step_weight": 1.0,
+  "TCM_byte_step_weight": 1.0
+}
