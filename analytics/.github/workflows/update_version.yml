@@ -1,0 +1,52 @@
+name: Update version
+on:
+  push:
+    branches:
+      - 'main'
+      - 'release*'
+jobs:
+  Update-version:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[automated-push]')"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PUSH_TOKEN }}
+      - name: init
+        run: |
+          echo "ref name: ${{ github.ref_name }}" 
+          echo "base name: ${{ github.base_ref }}"
+          echo "---------------------------- env ----------------------------"
+          env
+      - name: update edge version
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          echo "current version `cat version`"
+          awk -F'["]' -v OFS='"' '{
+              split($1,a,".");
+              $1=a[1]"."a[2]"."a[3]+1"."0;
+              print
+          }
+          ' <<< cat version > v1 ; mv v1 version
+          
+          echo "updated version `cat version`"
+      - name: update edge branch
+        if: ${{ github.ref_name != 'main' }}
+        run: |
+          echo "current version `cat version`"
+          awk -F'["]' -v OFS='"' '{
+              split($1,a,".");
+              $1=a[1]"."a[2]"."a[3]"."a[4]+1;
+              print
+          }
+          ' <<< cat version > v1 ; mv v1 version
+
+          echo "updated version `cat version`"
+      - name: push
+        run: |
+          git config --global user.email "automation@lumix.ai"
+          git config --global user.name "automation"
+          
+          git commit -am "[automated-push] update version: `cat version`"
+          git push

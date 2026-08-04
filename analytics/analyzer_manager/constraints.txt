@@ -1,0 +1,5 @@
+#opencv-python-headless==999.999.999  # A non-existent version to block installation
+numpy==1.26.4
+scipy==1.11.4
+
+

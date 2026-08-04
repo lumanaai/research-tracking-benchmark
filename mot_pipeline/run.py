@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 from mot_pipeline.class_maps import (
+    class_space_for_yolo_weights,
     policy_for_benchmark,
     policy_for_coco,
     policy_for_yolo_weights,
@@ -27,6 +28,7 @@ from mot_pipeline.paths import (
 )
 from mot_pipeline.protocols import RunSpec
 from mot_pipeline.registry import get_benchmark, get_detector, get_tracker
+from mot_pipeline.trackers.analytics_bytetrack import DEFAULT_CFG as AB_DEFAULTS
 from mot_pipeline.trackers.base import load_tracker_config
 from mot_pipeline.trackers.fasttracker import DEFAULT_CFG as FT_DEFAULTS
 from mot_pipeline.trackers.hybridsort import DEFAULT_CFG as HS_DEFAULTS
@@ -49,10 +51,17 @@ def make_run_id(
     detector_id: str,
     cfg_path: Optional[Path],
     explicit: Optional[str] = None,
+    *,
+    target_fps: Optional[float] = None,
 ) -> str:
     if explicit:
         return explicit
-    return f"{benchmark}_{tracker}_{detector_id}_{_cfg_tag(cfg_path)}_{_ts()}"
+    fps_tag = ""
+    if target_fps is not None:
+        # Keep the tag filesystem-friendly (10 → fps10, 7.5 → fps7p5).
+        fps_txt = f"{float(target_fps):g}".replace(".", "p")
+        fps_tag = f"_fps{fps_txt}"
+    return f"{benchmark}_{tracker}_{detector_id}_{_cfg_tag(cfg_path)}{fps_tag}_{_ts()}"
 
 
 def _default_tracker_config(tracker: str, benchmark: str) -> Optional[Path]:
@@ -70,6 +79,8 @@ def _default_tracker_config(tracker: str, benchmark: str) -> Optional[Path]:
         return cfg_root / "ocsort" / "default.json"
     if tracker == "hybridsort":
         return cfg_root / "hybridsort" / "default.json"
+    if tracker == "analytics_bytetrack":
+        return cfg_root / "analytics_bytetrack" / "benchmark.json"
     return None
 
 
@@ -80,6 +91,8 @@ def _tracker_defaults(tracker: str) -> dict:
         return dict(OC_DEFAULTS)
     if tracker == "hybridsort":
         return dict(HS_DEFAULTS)
+    if tracker == "analytics_bytetrack":
+        return dict(AB_DEFAULTS)
     return {}
 
 
@@ -127,6 +140,21 @@ def _track_class_filter(args: argparse.Namespace, benchmark: str):
             return None, frozenset()
         return policy_for_benchmark(benchmark, args.exclude_motorcycles)
     return policy_for_benchmark(benchmark, args.exclude_motorcycles)
+
+
+def _track_class_space(args: argparse.Namespace, benchmark: str) -> str:
+    """Which class numbering the cached det.txt uses (see class_maps)."""
+    if args.detector == "yolov8":
+        weights = Path(args.weights) if args.weights else DEFAULT_YOLO_WEIGHTS
+        return class_space_for_yolo_weights(weights)
+    if args.detector == "existing":
+        space = getattr(args, "class_space", None) or "auto"
+        if space == "coco" or (space == "auto" and benchmark == "fasttracker_bench"):
+            return "coco"
+        if space == "none" or (space == "auto" and benchmark == "cityflow"):
+            return "cityflow"
+        return benchmark
+    return benchmark
 
 
 def _detections_dir(benchmark: str, split: str, detector_id: str) -> Path:
@@ -189,18 +217,40 @@ def cmd_track(args: argparse.Namespace, detections_dir: Optional[Path] = None) -
     defaults = _tracker_defaults(args.tracker)
     cfg = load_tracker_config(cfg_path, defaults)
 
+    keep, drop = _track_class_filter(args, args.benchmark)
+    target_fps = getattr(args, "fps", None)
+    if target_fps is not None and float(target_fps) <= 0:
+        raise SystemExit(f"--fps must be positive, got {target_fps}")
+    extra = {
+        "keep_classes": sorted(keep) if keep is not None else None,
+        "drop_classes": sorted(drop),
+        "class_space": _track_class_space(args, args.benchmark),
+    }
+    if target_fps is not None:
+        extra["target_fps"] = float(target_fps)
+
     run_id = make_run_id(
-        args.benchmark, args.tracker, det_id, cfg_path, args.run_id
+        args.benchmark,
+        args.tracker,
+        det_id,
+        cfg_path,
+        args.run_id,
+        target_fps=float(target_fps) if target_fps is not None else None,
     )
     exp_dir = EXPERIMENTS_ROOT / run_id
     tracks_dir = exp_dir / "tracks"
     tracks_dir.mkdir(parents=True, exist_ok=True)
 
-    keep, drop = _track_class_filter(args, args.benchmark)
-    extra = {
-        "keep_classes": sorted(keep) if keep is not None else None,
-        "drop_classes": sorted(drop),
+    spec_extra = {
+        "detections_dir": str(det_root),
+        "class_filter": {
+            "keep_classes": extra["keep_classes"],
+            "drop_classes": extra["drop_classes"],
+            "class_space": extra["class_space"],
+        },
     }
+    if target_fps is not None:
+        spec_extra["target_fps"] = float(target_fps)
 
     spec = RunSpec(
         run_id=run_id,
@@ -213,10 +263,7 @@ def cmd_track(args: argparse.Namespace, detections_dir: Optional[Path] = None) -
         tracker_config=cfg,
         sequences=[p.name for p in seq_dirs],
         exclude_motorcycles=args.exclude_motorcycles,
-        extra={
-            "detections_dir": str(det_root),
-            "class_filter": extra,
-        },
+        extra=spec_extra,
     )
     write_json(exp_dir / "config.json", spec.to_dict())
     if cfg_path and cfg_path.is_file():
@@ -226,7 +273,8 @@ def cmd_track(args: argparse.Namespace, detections_dir: Optional[Path] = None) -
     if args.tracker == "fasttracker":
         tracker_kwargs["class_aware"] = getattr(args, "class_aware", False)
     tracker = get_tracker(args.tracker, **tracker_kwargs)
-    print(f"Track [{tracker.name}] → {tracks_dir}")
+    fps_msg = f" @ {float(target_fps):g} FPS (frame subsample)" if target_fps is not None else ""
+    print(f"Track [{tracker.name}]{fps_msg} → {tracks_dir}")
     for i, seq_dir in enumerate(seq_dirs, 1):
         det_path = det_root / seq_dir.name / "det.txt"
         if not det_path.is_file():
@@ -350,7 +398,13 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument(
                 "--tracker",
                 required=True,
-                choices=["fasttracker", "traffictrack", "ocsort", "hybridsort"],
+                choices=[
+                    "fasttracker",
+                    "traffictrack",
+                    "ocsort",
+                    "hybridsort",
+                    "analytics_bytetrack",
+                ],
             )
             sp.add_argument(
                 "--tracker-config",
@@ -387,6 +441,16 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--half", action="store_true")
             sp.add_argument("--max-frames", type=int, default=None)
             sp.add_argument("--force-detect", action="store_true")
+            sp.add_argument(
+                "--fps",
+                type=float,
+                default=None,
+                help=(
+                    "Target tracking FPS: subsample cached detections by "
+                    "stride≈round(seq_fps/target) from seqinfo.ini frameRate. "
+                    "Does not re-run detection. Omit to track every frame."
+                ),
+            )
 
     sp_c = sub.add_parser("convert", help="Ensure MOT layout for a benchmark.")
     add_common(sp_c)

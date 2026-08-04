@@ -26,4 +26,12 @@ FASTTRACKER_ROOT = PROJECT_ROOT / "FastTracker"
 OCSORT_ROOT = PROJECT_ROOT / "OC_SORT"
 HYBRIDSORT_ROOT = PROJECT_ROOT / "HybridSORT"
 
+# In-house analytics monorepo; only analyzer_manager/app/tracking/ is used.
+ANALYTICS_ROOT = PROJECT_ROOT / "analytics"
+ANALYTICS_APP_ROOT = ANALYTICS_ROOT / "analyzer_manager" / "app"
+ANALYTICS_CLASSES_CSV = (
+    ANALYTICS_ROOT / "analyzer_manager" / "assets" / "detection" / "32cls.csv"
+)
+ANALYTICS_TRACK_CONFIG = ANALYTICS_ROOT / "analyzer_manager" / "assets" / "configAnalytic.json"
+
 DEFAULT_YOLO_WEIGHTS = WEIGHTS_ROOT / "yolov8m-expert_eff-1_2.pt"

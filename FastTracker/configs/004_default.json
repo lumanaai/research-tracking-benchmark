@@ -1,0 +1,20 @@
+{
+    "track_thresh": 0.7,
+    "track_buffer": 30,
+    "match_thresh": 0.85,
+    "min_box_area": 100,
+    "reset_velocity_offset_occ": 5,
+    "reset_pos_offset_occ": 3,
+    "enlarge_bbox_occ": 1.1,
+    "dampen_motion_occ": 0.89,
+    "active_occ_to_lost_thresh": 10,
+    "init_iou_suppress": 0.8,
+
+    "ROIs": {
+        "roi_1_points": [[312, 196], [422, 188], [1399, 694], [152, 697]],
+        "roi_2_points": [[774, 407], [1541, 382], [614, 163], [498, 176]]
+    },
+    "roi_repair_max_gap": 15,   
+    "dir_window_N": 10,         
+    "dir_margin_deg": 2.0       
+}

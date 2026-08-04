@@ -1,0 +1,54 @@
+name: Pull_Request
+
+on:
+  pull_request:
+
+jobs:
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Ensure we can compare changes
+
+      - name: Check for changes in weights/all/
+        id: check
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep 'weights/all/'; then
+            echo "changed=true" >> $GITHUB_ENV
+            echo "changed=true"
+          else
+            echo "changed=false" >> $GITHUB_ENV
+            echo "changed=false"
+          fi
+          echo "changed=${{ env.changed }}" >> $GITHUB_OUTPUT
+
+  trt_exporter:
+    needs: check_changes
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ analytics_512, analytics_600, analytics_l4, analytics_rtx2000, analytics_rtx4000 ]
+    name: TRT Exporter on ${{ matrix.name }}
+    if: needs.check_changes.outputs.changed == 'true' || needs.check_changes.outputs.changed == true
+    uses: lumanaai/analytics/.github/workflows/trt_exporter.yml@main
+    secrets: inherit
+    with:
+      run_command: -u
+      name: ${{ matrix.name }}
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ analytics_512, analytics_610, analytics_l4, analytics_rtx2000, analytics_rtx4000 ]
+    name: Execute Tests on ${{ matrix.name }}
+    if: always()  # Tests always run, regardless of trt_exporter
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    with:
+      run_command: -m "not extended and not jp5_skip"
+      name: ${{ matrix.name }}

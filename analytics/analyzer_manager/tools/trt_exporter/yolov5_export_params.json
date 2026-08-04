@@ -1,0 +1,10 @@
+{
+    "image_sz": [
+        384,
+        640
+    ],
+    "batch_sz": 4,
+    "half": true,
+    "workspace": 2,
+    "verbose": false
+}

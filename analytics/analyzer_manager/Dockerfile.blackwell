@@ -1,0 +1,18 @@
+# Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch with opencv on GPU
+FROM lumixai/analytic_base:0.1.0-x86_blackwell
+
+# Install python dependencies
+RUN python3 -m pip install --upgrade pip
+
+COPY jetson_requirements.txt .
+RUN python3 -m pip install --no-cache -r jetson_requirements.txt
+
+# additional requirements not in base docker
+RUN pip3 install matplotlib>=3.2.2 numpy>=1.21.1 scipy>=1.10.0 scikit-learn>=1.2.1
+RUN pip3 install pillow --upgrade
+RUN pip3 install onnxruntime
+RUN pip3 install onnx~=1.17.0 qudida>=0.0.4 albumentations~=1.3.1 ultralytics~=8.3 lap --no-deps
+RUN pip3 install appdirs 
+
+ENV HOST=cuda
+ENV USE_NV12=True

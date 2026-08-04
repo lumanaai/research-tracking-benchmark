@@ -1,0 +1,14 @@
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy contents
+COPY app/ /usr/src/app
+COPY tools/trt_exporter/* /usr/src/app/
+RUN mkdir -p /usr/src/app/utils
+COPY automation/utils/ /usr/src/app/utils
+
+COPY assets/config* /usr/src/app/configs/
+COPY ./assets /usr/src/assets
+
+CMD ["python3","-u","pf_exporter_s3.py", "-j", "1"]

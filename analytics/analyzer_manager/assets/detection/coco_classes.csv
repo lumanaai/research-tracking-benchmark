@@ -1,0 +1,81 @@
+index,class,object,object_id
+0,person,person,0
+1,bicycle,vehicle,1
+2,car,vehicle,1
+3,motorcycle,vehicle,1
+4,airplane,unknown,-1
+5,bus,vehicle,1
+6,train,unknown,-1
+7,truck,vehicle,1
+8,boat,unknown,-1
+9,traffic light,unknown,-1
+10,fire hydrant,unknown,-1
+11,stop sign,unknown,-1
+12,parking meter,unknown,-1
+13,bench,unknown,-1
+14,bird,unknown,-1
+15,cat,pet,2
+16,dog,pet,2
+17,horse,unknown,-1
+18,sheep,unknown,-1
+19,cow,unknown,-1
+20,elephant,unknown,-1
+21,bear,unknown,-1
+22,zebra,unknown,-1
+23,giraffe,unknown,-1
+24,backpack,unknown,-1
+25,umbrella,unknown,-1
+26,handbag,unknown,-1
+27,tie,unknown,-1
+28,suitcase,unknown,-1
+29,frisbee,unknown,-1
+30,skis,unknown,-1
+31,snowboard,unknown,-1
+32,sports ball,unknown,-1
+33,kite,unknown,-1
+34,baseball bat,unknown,-1
+35,baseball glove,unknown,-1
+36,skateboard,unknown,-1
+37,surfboard,unknown,-1
+38,tennis racket,unknown,-1
+39,bottle,unknown,-1
+40,wine glass,unknown,-1
+41,cup,unknown,-1
+42,fork,unknown,-1
+43,knife,unknown,-1
+44,spoon,unknown,-1
+45,bowl,unknown,-1
+46,banana,unknown,-1
+47,apple,unknown,-1
+48,sandwich,unknown,-1
+49,orange,unknown,-1
+50,broccoli,unknown,-1
+51,carrot,unknown,-1
+52,hot dog,unknown,-1
+53,pizza,unknown,-1
+54,donut,unknown,-1
+55,cake,unknown,-1
+56,chair,unknown,-1
+57,couch,unknown,-1
+58,potted plant,unknown,-1
+59,bed,unknown,-1
+60,dining table,unknown,-1
+61,toilet,unknown,-1
+62,tv,unknown,-1
+63,laptop,unknown,-1
+64,mouse,unknown,-1
+65,remote,unknown,-1
+66,keyboard,unknown,-1
+67,cell phone,unknown,-1
+68,microwave,unknown,-1
+69,oven,unknown,-1
+70,toaster,unknown,-1
+71,sink,unknown,-1
+72,refrigerator,unknown,-1
+73,book,unknown,-1
+74,clock,unknown,-1
+75,vase,unknown,-1
+76,scissors,unknown,-1
+77,teddy bear,unknown,-1
+78,hair drier,unknown,-1
+79,toothbrush,unknown,-1

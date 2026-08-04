@@ -1,0 +1,5 @@
+# platform weights
+*.engine
+*.onnx
+*.pt
+*.plan

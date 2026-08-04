@@ -1,0 +1,116 @@
+name: Tests_Analytics
+
+on:
+  workflow_call:
+    inputs:
+      run_command:
+        description: 'pytest execution parameters'
+        type: string
+        required: true
+      name:
+        description: 'Runner name (analytics_512, analytics_610, analytics_l4, analytics_rtx2000, analytics_rtx4000)'
+        type: string
+        required: true
+
+jobs:
+  tests:
+    name: Test on ${{ inputs.name }}
+    runs-on: ${{ inputs.name }}
+
+    steps:
+      - name: init
+        run: |
+          echo "---------------------------- env ----------------------------"
+          env
+          echo "---------------------------- info ----------------------------"
+          git --version
+          echo "command: ${{ inputs.run_command }}"
+          ip -4 a | grep 192
+      - name: cleanup
+        run: |
+          rm -rf /home/nvidia/actions-runner/_work/analytics/analytics/analyzer_manager || echo "analytics clean"
+          rm -rf /home/nvidia/actions-runner/_work/analytics/analytics/automation/tests/logs || echo "analytics logs  clean"
+          docker rm -f inference_server || echo "clean inference_server not running"
+          docker rm -f analyzer_tests || echo "clean analyzer_tests not running"
+          docker rm -f analyzer_tests_triton || echo "clean analyzer_tests_triton not running"
+          docker rm -f offline_analytics || echo "clean offline_analytics not running"
+          docker network rm analytics_network || echo "clean network not running"
+          docker ps -a | grep "analytics_automation-*" | awk '{print $1}' | xargs docker rm  || echo "clean docker image"
+          pm2 stop 0 || echo "pm2 stop"
+          docker stop $(docker ps -q) || echo "stop all dockers"
+          docker stop $(docker ps -q) || echo "stop all dockers"
+          docker stop $(docker ps -q) || echo "stop all dockers"
+          docker stop $(docker ps -q) || echo "stop all dockers"
+          echo "---------------------------- docker info ----------------------------"
+          docker ps
+      - name: Checkout (for local composite)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 1
+      - name: Checkout (recursive submodules)
+        uses: ./.github/actions/analytics-checkout
+        with:
+          automation_ssh_key: ${{ secrets.AUTOMATION }}
+          analytics_ssh_key: ${{ secrets.ANALYTICS }}
+          lfs: 'false'
+      - name: build automation environment
+        run: |
+          mkdir logs
+      - name: setup analytics dockers
+        run: |
+          git lfs install
+          git lfs pull
+          python3 setup_dockers.py -t -b
+      - name: build analytics dockers
+        run: |
+          docker build -f analyzer_manager/DockerfileAutomation -t analyzer_tests_image analyzer_manager/.
+          docker tag lumixai/inference_server:latest inference_server_image
+      - name: run analytics tests
+        run: |
+          echo "---------------------------- docker info ----------------------------"
+          docker ps
+          echo "---------------------------- start infra ----------------------------"
+          docker network create analytics_network
+          docker run --rm --runtime=nvidia --name inference_server --network=analytics_network -p 8000:8000 -p 8001:8001 -p 8002:8002 -v ${HOME}/assets/:/assets/ -d inference_server_image
+          echo "---------------------------- triton test ----------------------------"
+          sleep 30
+          docker ps
+          docker run --runtime=nvidia --name analyzer_tests_triton --network=analytics_network  analyzer_tests_image python3 -m pytest ./tests/analytics/test_basic/test_triton.py
+          echo "---------------------------- full test ----------------------------"
+          docker run --runtime=nvidia -d --rm --name offline_analytics --network=analytics_network -p 5055 -v /tmp:/tmp -v /dev/shm:/dev/shm -v /home/nvidia/actions-runner/_work/analytics/analytics/analyzer_manager/assets/:/usr/src/app/configs/  lumixai/analytic_manager sh offline_main.sh
+          docker run --runtime=nvidia --name analyzer_tests  --network=analytics_network -v /tmp:/tmp  -v /dev/shm:/dev/shm  analyzer_tests_image python3 -m pytest ./tests/analytics/test_basic -m "not extended and not jp5_skip"
+      - name: copy logs from docker
+        if: always()
+        run: |
+          docker cp analyzer_tests:/usr/src/automation/tests/logs ./logs
+      - name: clean infrastructure
+        if: always()
+        run: |
+          docker rm -f inference_server || echo "clean inference_server not running"
+          docker rm -f analyzer_tests || echo "clean analyzer_tests not running"
+          docker rm -f analyzer_tests_triton || echo "clean analyzer_tests_triton not running"
+          docker rm -f offline_analytics || echo "clean offline_analytics not running"
+          docker network rm analytics_network || echo "clean network not running"
+
+      #      - name: run tests
+      #        uses: isbang/compose-action@v1.5.1
+      #        with:
+      #          compose-file: docker-compose-tests.yml
+      #      - name: run tests
+      #        uses: addnab/docker-run-action@v3
+      #        with:
+      #          image: analytics_automation:latest
+      #          shell: bash
+      #          options: --runtime nvidia --name analytics_automation-1
+      #          run: |
+      #            ls -laF ./
+      #            python3 -m pytest ./tests/analytics ${{ inputs.run_command }}
+      - name: upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests_${{ inputs.name }} logs_${{ inputs.name }}
+          path: |
+            ./logs/
+            .automation/tests/logs

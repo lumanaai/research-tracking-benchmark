@@ -13,6 +13,7 @@ from mot_pipeline.paths import OCSORT_ROOT
 from mot_pipeline.protocols import Tracker
 from mot_pipeline.trackers.base import (
     dets_to_xyxy_score,
+    resolve_tracking_schedule,
     write_mot_tracks,
     xyxy_ids_to_frame_result,
 )
@@ -83,6 +84,8 @@ class OCSORTAdapter(Tracker):
         if seq_len is None:
             seq_len = frames[-1] if frames else 0
 
+        frame_ids, _, _, _ = resolve_tracking_schedule(meta, seq_len, extra)
+
         tracker = OCSort(
             det_thresh=float(cfg["det_thresh"]),
             max_age=int(cfg["max_age"]),
@@ -97,7 +100,7 @@ class OCSORTAdapter(Tracker):
         img_info = (img_h, img_w)
         img_size = (img_h, img_w)
         results: List[Tuple[int, list, list, list]] = []
-        for frame_id in range(1, seq_len + 1):
+        for frame_id in frame_ids:
             det_array = dets_to_xyxy_score(per_frame.get(frame_id, []))
             online = tracker.update(det_array, img_info, img_size)
             results.append(xyxy_ids_to_frame_result(frame_id, online))

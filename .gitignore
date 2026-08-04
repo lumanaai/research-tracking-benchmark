@@ -42,13 +42,14 @@ models/
 *.weights
 *.pkl
 *.h5
+*.engine
 
 # Media / caches that may land under the repo
 *.mp4
 *.avi
 *.mov
 *.wav
-*.npz
+*.gif
 .cache/
 wandb/
 runs/
@@ -56,10 +57,15 @@ outputs/
 tmp/
 temp/
 
-# Upstream tracker clones (nested git repos; clone separately)
-FastTracker/
-OC_SORT/
-HybridSORT/
+# Upstream clone noise / fixtures (not needed to run our pipeline)
+**/evaldata/
+**/TrackEval/tracker_test/
+**/trackeval/tracker_test/
+
+# Nested VCS leftovers (clones are vendored as plain directories, not submodules)
+**/.git/
+**/.git_bak/
+.gitmodules
 
 # Local secrets / env
 .env

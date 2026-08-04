@@ -1,0 +1,28 @@
+FROM nvcr.io/nvidia/l4t-ml:r35.2.1-py3
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm
+ENV PYTHONUNBUFFERED=1
+ARG VIDEO_TEST
+ENV VIDEO_TEST $VIDEO_TEST
+RUN apt-get update
+RUN pip3 install pika numpy
+RUN apt-get install -y ffmpeg
+#RUN apt-get install python3.8 -y python3.8-dev python3.8-distutils python3.8-venv python3-pip
+
+#RUN python3.8 -m pip install numpy pika opencv-python    
+
+# Create working directory
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+ENV BURST_TEST $BURST_TEST
+ENV JETSON $JETSON
+
+# Copy contents
+COPY . /usr/src/
+RUN useradd -ms /bin/bash -G video tester  
+USER tester
+CMD python3 -u analyzer_tester.py 
+
+ENV HOST=orin

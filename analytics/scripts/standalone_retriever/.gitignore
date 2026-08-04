@@ -1,0 +1,11 @@
+# Credentials
+env_cred.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Downloaded data
+/infra/
+

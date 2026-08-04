@@ -1,0 +1,21 @@
+
+# Set working directory
+WORKDIR /usr/src/app
+
+RUN echo building analyzer_manager docker
+
+RUN apt-get install -y netcat-openbsd
+
+# Copy contents
+COPY . /usr/src/
+
+COPY ./docker_start.sh /usr/src/app/docker_start.sh
+RUN chmod +x /usr/src/app/docker_start.sh
+
+# Set environment
+ENV CONSOLE_LOG $CONSOLE_LOG
+ENV JETSON $JETSON
+ENV INSTANCE_ID $INSTANCE_ID
+
+# wait for rabbit to be ready before starting the app
+CMD ["/bin/bash", "-c", "./docker_start.sh --wait-for-offline --log-dir /usr/src/app/logs/ --log-name start_analyzer_managerlog --app-name 'analyzer_manager' --cmd 'python3 -u main.py'"]

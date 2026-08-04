@@ -12,7 +12,11 @@ import numpy as np
 from mot_pipeline.mot_io import load_mot_dets, parse_seqinfo
 from mot_pipeline.paths import FASTTRACKER_ROOT, PIPELINE_ROOT
 from mot_pipeline.protocols import Tracker
-from mot_pipeline.trackers.base import load_tracker_config, write_mot_tracks
+from mot_pipeline.trackers.base import (
+    load_tracker_config,
+    resolve_tracking_schedule,
+    write_mot_tracks,
+)
 
 DEFAULT_CFG: Dict[str, Any] = {
     "track_thresh": 0.6,
@@ -94,7 +98,6 @@ class FastTrackerAdapter(Tracker):
         img_w = int(meta.get("imWidth", 0)) or None
         img_h = int(meta.get("imHeight", 0)) or None
         seq_len = int(meta.get("seqLength", 0)) or None
-        frame_rate = self.frame_rate_override or int(float(meta.get("frameRate", 30)))
 
         if not det_path.is_file():
             raise FileNotFoundError(f"No detection file: {det_path}")
@@ -115,6 +118,13 @@ class FastTrackerAdapter(Tracker):
         if seq_len is None:
             seq_len = frames[-1] if frames else 0
 
+        frame_ids, tracker_fps, _, _ = resolve_tracking_schedule(meta, seq_len, extra)
+        frame_rate = (
+            self.frame_rate_override
+            if self.frame_rate_override is not None
+            else max(1, int(round(tracker_fps)))
+        )
+
         tracker = Fasttracker(SimpleNamespace(mot20=self.mot20), cfg, frame_rate=frame_rate)
         min_box_area = (
             self.min_box_area_override
@@ -125,7 +135,7 @@ class FastTrackerAdapter(Tracker):
         img_size = (img_h, img_w)
 
         results: List[Tuple[int, list, list, list]] = []
-        for frame_id in range(1, seq_len + 1):
+        for frame_id in frame_ids:
             det_array = _build_det_array(per_frame.get(frame_id, []), self.class_aware)
             online_targets = tracker.update(det_array, img_info, img_size)
             tlwhs, ids, scores = [], [], []

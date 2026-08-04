@@ -1,0 +1,54 @@
+name: Execution
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_command:
+        description: 'pytest execution parameters'
+        type: string
+        default: '-m "not extended"'
+      execution_target:
+        description: 'Select execution target: all, analytics_512, analytics_610 or analytics_l4 or analytics_rtx2000 or analytics_rtx4000'
+        type: string
+        default: 'all'
+
+jobs:
+  analytics_512:
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    if: ${{ github.event.inputs.execution_target == 'all' || github.event.inputs.execution_target == 'analytics_512' }}
+    with:
+      run_command: ${{ github.event.inputs.run_command }}
+      name: 'analytics_512'
+
+  analytics_610:
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    if: ${{ github.event.inputs.execution_target == 'all' || github.event.inputs.execution_target == 'analytics_610' }}
+    with:
+      run_command: ${{ github.event.inputs.run_command }}
+      name: 'analytics_610'
+
+  analytics_l4:
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    if: ${{ github.event.inputs.execution_target == 'all' || github.event.inputs.execution_target == 'analytics_l4' }}
+    with:
+      run_command: ${{ github.event.inputs.run_command }}
+      name: 'analytics_l4'
+
+  analytics_rtx2000:
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    if: ${{ github.event.inputs.execution_target == 'all' || github.event.inputs.execution_target == 'analytics_rtx2000' }}
+    with:
+      run_command: ${{ github.event.inputs.run_command }}
+      name: 'analytics_rtx2000'
+
+  analytics_rtx4000:
+    uses: lumanaai/analytics/.github/workflows/test_analytics.yml@main
+    secrets: inherit
+    if: ${{ github.event.inputs.execution_target == 'all' || github.event.inputs.execution_target == 'analytics_rtx4000' }}
+    with:
+      run_command: ${{ github.event.inputs.run_command }}
+      name: 'analytics_rtx4000'

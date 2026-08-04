@@ -1,0 +1,16 @@
+# Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch
+FROM nvcr.io/nvidia/pytorch:25.05-py3
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install linux packages
+RUN apt update && apt install -y zip htop screen libgl1 libfreetype6-dev
+
+# Install python dependencies
+RUN python3 -m pip install --upgrade pip
+
+# install opencv
+COPY build_opencv_cuda.sh .
+RUN chmod +x build_opencv_cuda.sh &&  ./build_opencv_cuda.sh
+
+ENV CV2_GPU_ENABLED=True

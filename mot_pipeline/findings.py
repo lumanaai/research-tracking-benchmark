@@ -24,6 +24,7 @@ PREFERRED_COLUMNS = [
     "detector_id",
     "tracker_config",
     "tracker_config_sha256",
+    "target_fps",
     "sequence_count",
     "exclude_motorcycles",
     "experiment_dir",
@@ -97,6 +98,7 @@ def record_findings(
         records = []
 
     tracker_config = spec.get("tracker_config", {})
+    extra = spec.get("extra") or {}
     record: Dict[str, Any] = {
         "run_id": spec["run_id"],
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
@@ -107,6 +109,7 @@ def record_findings(
         "detector_id": spec["detector_id"],
         "tracker_config": spec.get("tracker_config_path") or "default",
         "tracker_config_sha256": _config_hash(tracker_config),
+        "target_fps": extra.get("target_fps"),
         "sequence_count": len(spec.get("sequences") or []),
         "exclude_motorcycles": bool(spec.get("exclude_motorcycles", False)),
         "experiment_dir": str(experiment_dir.resolve()),

@@ -1,0 +1,8 @@
+name: "weapon-expert"
+backend: "tensorrt"
+max_batch_size: 2
+dynamic_batching {
+  preferred_batch_size: [2]  # A list of batch sizes Triton should prefer
+  max_queue_delay_microseconds: 900000  # Maximum time to wait to fill a batch before sending
+  preserve_ordering: true  # Preserve request ordering when batching
+}

@@ -1,0 +1,10 @@
+name: "yolov8"
+backend: "tensorrt"
+max_batch_size: 0
+
+input [
+  {
+    name: "images"
+    dims: [4, 3, 384, 640]
+  }
+]

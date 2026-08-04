@@ -1,0 +1,292 @@
+{
+    "version": 3.86,
+    "preprocess": {
+        "name": "cv2",
+        "inputFormat": "nv12"
+    },
+    "load_balance" : {
+        "mean_skip": 2,
+        "low_motion_th": 15,
+        "high_motion_th": 50,
+        "index_percentile": 99
+    },
+
+    "l0_detect" : {
+        "name" : "yolov8",
+        "objects": [0, 1, 2, 3, 4, 5, 7, 8],
+        "subClasses": ["bicycle", "car", "motorcycle" , "bus", "truck", "boat", "cat", "dog", "horse", "sheep", "cow"],
+        "conf_thres": 0.1
+    },
+    "l0_track" : {
+        "name" : "bytetrack",
+        "track_thresh": 0.25,
+        "untrack_objects": [3, 4, 5, 7],
+        "first_track_compensation": 0.1,
+        "baseline_track_compensation": 0.2,
+        "use_per_class_thresh": true,
+        "n_init": 3,
+        "track_buffer_seconds": 6,
+        "removed_buffer_seconds": 5,
+        "prev_track_thresh" : 0.25,
+        "prev_first_track_thresh" : 0.35,
+        "match_thresh" : 0.96,
+        "match_thresh_2" : 0.84,
+        "match_thresh_3" : 0.6,
+        "ciou_track_thresh" : 0.18,
+        "ciou_first_track_thresh" : 0.29,
+        "ciou_match_thresh" : 1.05,
+        "ciou_match_thresh_2" : 0.99,
+        "ciou_match_thresh_3" : 0.9,
+        "min_box_area": 10,
+        "mot20": false,
+        "use_timestamp": false,
+        "use_reid_conflict_solver" : true,
+        "use_ciou": false,
+        "reid_freq_seconds" : 2,
+        "maintain_id_cost_disscount" : 0.1,
+        "conflict_classes": [0, 1],
+        "min_max_size_ratio_start" : 0.15,
+        "min_max_size_ratio_continue" : 0.2,
+        "max_size_filtered_classes" : [2, 3, 4, 6]
+    },
+    "entityManagement": {
+        "enable_blacklist": true,
+        "flag_blacklist": true,
+        "blacklist_iou": 0.8,
+        "blacklist_span": 1,
+        "blacklist_encode":0,
+        "blacklist_low_confidence_th": 0.75,
+        "blacklist_conf_thresh": 0.5,
+        "stats_collection": {
+            "enable": true,
+            "period_sec": 600,
+            "minSamplesForFiltering": 100,
+            "robustMaxPercentile": 0.9
+        }
+    },
+    "clip": {
+        "enable": true,
+        "encode_thumbnails": true,
+        "encode_crops": false
+    },
+    "image-quality": {
+        "enable": true,
+        "accumulation_period": 288
+    },
+    "jsonPolicy":{
+        "min_json_gap": 60000,
+        "updateEmptyInfo": false
+    },
+    "countingPolicy":{
+        "updateRate": 60,
+        "regionUpdateRate": 60
+    },
+    "motionPolicy":{
+        "motionVectorsDuration": 30000,
+        "min_motion_output": 10
+    },
+    "thumbnailPolicy":{
+        "thumbnailsDuration": 2000,
+        "mandatoryThumbnailsMultiplier": 10,
+        "minMotionForOptionalThumbnail": 80,
+        "minObjMotionForOptionalThumbnail": 2,
+        "motionWindow": 2,
+        "snapshotDuration": 1200000,
+        "thum_width": 640,
+        "snap_width": 1280,
+        "jpegquality":50,
+        "snapshotquality":70,
+        "logThumbnails": false
+    },
+    "trainThumbPolicy":{
+        "trainJpegquality":70,
+        "cropJpegquality":70,
+        "TrainThumbnailDurationSeconds": 300,
+        "TrainThumbnailQueueLen": 15,
+        "maxTrainThumbnailsIn100Seconds": 2,
+        "maxCropThumbnailsIn100Seconds": 32,
+        "useNewSelector": true,
+        "resize": -1,
+        "clip_encode_crops": true,
+        "clip_crop_queue_size": 30,
+        "clip_crop_rate_limit_sec": 0.5,
+        "TrainThumbnailDurationCounter": {
+            "1000": 250,
+            "3000": 400,
+            "5000": 800,
+            "after": 1600
+        },
+        "crops_ar": {
+            "person": 0.625,
+            "vehicle": 1,
+            "face": 1,
+            "license_plate": 2,
+            "pet": 1,
+            "shoppingcart": 1
+        },
+        "crop_bw_limits_kb": {
+            "350": 70,
+            "500": 50,
+            "750": 30,
+            "100000": 10
+        }
+    },
+    "alertThumbPolicy":{
+        "alertJpegquality":85,
+        "maxAlertThumbnailsIn100Seconds": 50,
+		"crop_bw_limits_kb": {
+            "750": 85,
+            "2000": 70,
+            "100000": 50
+        }
+    },
+    "pre_process":{
+        "batchSize": 4,
+        "checkImageSize": false
+    },
+    "post_process":{
+        "det_thresh": 0.25,
+        "pixelateThumbnail": {
+            "magnitude": 25
+        },
+        "object_to_exclude_from_annotation": [5]
+    },
+    "l1_models" : {
+        "models" : ["alpr", "human_parsing", "face", "weapons_classification", "vehicle", "license-plate", "container"],
+		"use_external_apis": false,
+        "attributes": {
+            "container" : {
+                "api_token": "3dec628a0ed8dd1bf83aaa046a8c7487060373f6",
+                "api_url": "https://container.lumana.ai/api/v1/predict/",
+                "revert_to_trucks": false,
+                "min_sec_between_calls": 30
+            },
+            "alpr" : {
+                "alprtoken": "6af5c948c3a6bc077391ab7428bb5d06303243c6",
+                "alprOnPermise" : false,
+                "regions": [],
+                "trials": 1,
+                "cropFactor": {
+                    "width": 0.05,
+                    "height": 0.05
+                },
+                "min_dimention": 120,
+                "confidenceLimit":{
+                    "detection": 0,
+                    "plate": 0.55,
+                    "mmc": 0.1
+                },
+                "post_score_weights": {
+                    "plate": 6,
+                    "mmc": 4,
+                    "containerId": 1
+                },
+                "min_success_conf": 0.9,
+                "mmc_success_thresh": {
+                    "make": 0.3,
+                    "model": 0.3,
+                    "colors": 0.7
+                },
+                "min_blur_th": 0.3,
+                "sizeFactorRetry": 2,
+                "alprURL" : "http://localhost:8080",
+                "alprCloudURL": "https://lpr.lumix.ai/v1/plate-reader/",
+                "alprTokenEnable" : true,
+                "jpegQuality" : 80,
+                "min_alpr_y_gb": 20,
+                "min_alpr_x_gb": 20,
+                "boundry_y_gb": 0.15,
+                "boundry_x_gb": 1
+            },
+            "human_parsing" : {
+                "pa": {
+                    "trials": 5
+                },
+                "reid" : {
+                    "enable": true
+                },
+                "ppe": {
+                    "enable": false
+                }
+            },
+            "weapons_classification" : {
+                    "enable": true,
+                    "half": false
+            },
+            "doors": {
+                "enable": false
+            },
+            "vehicle": {
+                "enable": true
+            },
+            "face": {
+                "enable": true,
+                "sensitivity_factor": 1.0
+            },
+            "lpc": {
+                "enable": false
+            }
+        }
+    },
+    "alertConfig": {
+        "logOnAlert": false,
+        "recognition": {
+            "useALPR": false
+        },
+        "lineCrossing": {
+            "minBlockout": 200,
+            "hysteresis": 5000
+        },
+        "weaponAppearance": {
+            "minBlockout": 500
+        },
+        "activity": {
+            "min_size_to_start_tracking": 0.05,
+            "max_num_of_trackers": 10
+        },
+        "httpCredentials": {
+            "username": "admin",
+            "password": "admin",
+            "type": 0
+        },
+        "appearance": {
+            "motion_filter": true,
+            "history_filter": false
+        },
+        "gpioConfig": {
+            "type": 0,
+            "active": 1,
+            "pw": 1000
+        },
+        "success_filter": false,
+        "strict_filters": false,
+        "internal_alerts": true,
+        "enable_routing_for_custom_objects": false,
+        "internal_alert_type_prob": {
+            "weapon": 0.1,
+            "fire": 0.1,
+            "falling": 0.3,
+            "violence": 0.5
+        },
+        "internal_alert_ratio": 0.3,
+        "internal_alert_limit":100,
+		"internal_tampering_alert_enabled": true
+    },
+    "variableConfig":{
+        "trafficPathResolution": [16,16]
+    },
+    "offline_analytics": {
+        "weapon_detection": {
+            "enable": true,
+			"legacy_mode": false
+        }
+    },
+    "state_objects": {
+        "enable": true,
+		"sample_period_ms": 1000,
+		"latency": 3,
+		"motion_sensitivity": 10,
+		"model_sensitivity": 0.35,
+		"alert_changes_object_latency": true
+    }
+}

@@ -1,0 +1,109 @@
+name: Trigger TRT Exporter
+
+on:
+  workflow_call:
+    inputs:
+      run_command:
+        description: 'Execution parameters for TRT Exporter'
+        type: string
+        required: false
+        default: '-u'
+      name:
+        description: 'Runner name (analytics_512 or analytics_600 or analytics_l4 or analytics_rtx2000 or analytics_rtx4000)'
+        type: string
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      run_command:
+        description: 'Execution parameters for TRT Exporter'
+        type: string
+        default: '-u'
+      name:
+        description: 'Runner name (analytics_512 or analytics_600 or analytics_l4 or analytics_rtx2000 or analytics_rtx4000)'
+        type: string
+        required: true
+        default: 'analytics_600'
+
+jobs:
+  pre_steps:
+    runs-on: ${{ inputs.name }}
+    outputs:
+      trigger_type: ${{ github.event_name }}
+
+    steps:
+      - name: Checkout (for local composite)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 1
+
+      - name: Checkout (recursive submodules)
+        uses: ./.github/actions/analytics-checkout
+        with:
+          automation_ssh_key: ${{ secrets.AUTOMATION }}
+          analytics_ssh_key: ${{ secrets.ANALYTICS }}
+          lfs: 'true'
+
+      - name: Setup Exporter Dockers
+        run: |
+          mkdir logs
+          python3 setup_dockers.py -e
+
+  execute_exporter:
+    needs: pre_steps
+    runs-on: ${{ inputs.name }}
+
+    steps:
+      - name: Determine Execution Mode
+        id: execution_mode
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "mode=pr" >> $GITHUB_ENV
+          else
+            echo "mode=command" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: PR Step 1 - Get Changed Files
+        if: env.mode == 'pr'
+        id: detect_changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          FOLDERS=$(echo "$CHANGED_FILES" | grep -Eo 'weights/all/[^/]+/' | sort -u | sed 's|weights/all/||;s|/||')
+          echo "Detected folders: $FOLDERS"
+
+          echo "folders=$FOLDERS" >> $GITHUB_ENV
+
+      - name: PR Step 2 - Run TRT Exporter
+        if: env.mode == 'pr' && env.folders != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          echo "Running TRT Exporter for PR with folders: $FOLDERS and runner: ${{ inputs.name }}"
+
+          docker run --runtime nvidia \
+            -v ~/exports:/exports \
+            -v "${{ github.workspace }}/analyzer_manager/inference":/usr/src/inference \
+            -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY_ID \
+            -e AWS_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
+            exporter python3 trt_exporter.py -u -t $FOLDERS
+
+      - name: Command - Run TRT Exporter
+        if: env.mode == 'command'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          echo "Running TRT Exporter with args: ${{ github.event.inputs.run_command }} and runner: ${{ inputs.name }}"
+
+          docker run --runtime nvidia \
+            -v ~/exports:/exports \
+            -v "${{ github.workspace }}/analyzer_manager/inference":/usr/src/inference \
+            -e AWS_ACCESS_KEY=$AWS_ACCESS_KEY_ID \
+            -e AWS_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
+            exporter python3 trt_exporter.py ${{ github.event.inputs.run_command }}

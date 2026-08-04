@@ -1,0 +1,11 @@
+# copy base models
+COPY model_repository /model_repository
+
+# scale instances group
+COPY scale_instance_group.py ./scale_instance_group.py
+RUN python3  scale_instance_group.py -n $TRITON_INSTANCE_SCALING -m /model_repository
+
+CMD ["tritonserver", "--model-repository=/model_repository", "--model-repository=/assets/model_repository", \
+  "--model-control-mode=explicit", "--load-model=pa", "--load-model=pa-reid", \
+  "--load-model=sface", "--load-model=webface","--load-model=retinaface", "--load-model=ediffiqa",\
+  "--load-model=vehicle", "--load-model=license-plate", "--load-model=clip", "--load-model=image-quality"]

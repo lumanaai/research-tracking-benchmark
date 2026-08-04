@@ -1,0 +1,20 @@
+# git stuff
+.git
+.gitignore
+
+# docker stuff
+Dockerfile*
+**/__pycache__
+
+# python stuff
+*.egg-info
+*.egg/
+*.pyc
+*.swp
+__pycache__
+
+# used in base only
+resources
+cuda_library
+python_library
+inference

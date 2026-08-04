@@ -1,0 +1,16 @@
+# Base ----------------------------------------
+torch
+torchvision
+torchaudio
+opencv-python
+onnxruntime
+nvidia-pyindex  # only needed on Ubuntu 20.04 / older pip (<26). Skip on Ubuntu 24.04+
+nvidia-tensorrt
+tidecv
+matplotlib>=3.2.2
+numpy~=1.23.1
+scipy>=1.10.0
+scikit-learn>=1.2.1
+ultralytics~=8.0.222
+cupy
+# the reset is the same as jetson requirements

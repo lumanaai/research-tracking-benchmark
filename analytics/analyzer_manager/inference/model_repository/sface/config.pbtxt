@@ -1,0 +1,2 @@
+name: "sface"
+backend: "tensorrt"

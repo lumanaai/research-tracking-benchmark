@@ -1,0 +1,78 @@
+name: Analytics checkout
+description: SSH agent, GitHub host keys, optional lumixai URL rewrite, and submodule checkout for lumanaai/analytics CI.
+
+inputs:
+  automation_ssh_key:
+    description: SSH private key for lumanaai/automation (secrets.AUTOMATION).
+    required: true
+  analytics_ssh_key:
+    description: SSH private key for lumanaai/analytics (secrets.ANALYTICS).
+    required: true
+  extra_ssh_key:
+    description: Optional third SSH private key (unused today; reserved for parity with edge-checkout).
+    required: false
+    default: ''
+  lfs:
+    description: If true, enable Git LFS on the root checkout and run git lfs pull at repo root only.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Start ssh-agent
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: |
+          ${{ inputs.automation_ssh_key }}
+          ${{ inputs.analytics_ssh_key }}
+
+    - name: Add optional extra deploy key
+      if: ${{ inputs.extra_ssh_key != '' }}
+      shell: bash
+      env:
+        EXTRA_KEY: ${{ inputs.extra_ssh_key }}
+      run: printf '%s' "$EXTRA_KEY" | ssh-add -
+
+    - name: Add GitHub to known_hosts
+      shell: bash
+      run: |
+        set -e
+        home_for_ssh="${HOME}"
+        if [[ "$(uname -s)" = "Linux" ]]; then
+          pw="$(getent passwd "$(id -un)" 2>/dev/null || true)"
+          if [[ -n "${pw}" ]]; then
+            home_for_ssh="$(echo "${pw}" | cut -d: -f6)"
+          fi
+        fi
+        mkdir -p "${home_for_ssh}/.ssh"
+        chmod 700 "${home_for_ssh}/.ssh"
+        ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> "${home_for_ssh}/.ssh/known_hosts"
+        chmod 600 "${home_for_ssh}/.ssh/known_hosts"
+
+    - name: Rewrite lumixai submodule URLs to lumanaai
+      shell: bash
+      run: |
+        set -e
+        home_for_global="${HOME}"
+        if [[ "$(uname -s)" = "Linux" ]]; then
+          pw="$(getent passwd "$(id -un)" 2>/dev/null || true)"
+          if [[ -n "${pw}" ]]; then
+            home_for_global="$(echo "${pw}" | cut -d: -f6)"
+          fi
+        fi
+        HOME="${home_for_global}" git config --global url."git@github.com:lumanaai/".insteadOf "git@github.com:lumixai/"
+
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        lfs: ${{ inputs.lfs == 'true' }}
+
+    # Root LFS only: avoid git lfs in nested analyzer_manager/automation (HTTPS + persisted credentials break LFS).
+    - name: Git LFS pull (root only)
+      shell: bash
+      run: |
+        if [ "${{ inputs.lfs }}" = "true" ]; then
+          git lfs pull
+        fi

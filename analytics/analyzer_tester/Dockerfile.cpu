@@ -1,0 +1,28 @@
+FROM python:3.8-slim-buster
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm
+ENV PYTHONUNBUFFERED=1
+ARG VIDEO_TEST
+ENV VIDEO_TEST $VIDEO_TEST
+RUN apt update
+
+RUN apt-get -y update 
+RUN apt-get install -y ffmpeg
+
+RUN python3.8 -m pip install pika scikit-image opencv-python    
+
+# Create working directory
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+ENV BURST_TEST $BURST_TEST
+ENV JETSON $JETSON
+
+# Copy contents
+COPY . /usr/src/
+RUN useradd -ms /bin/bash tester
+USER tester
+CMD python3.8 -u analyzer_tester.py 
+
+ENV HOST=cuda

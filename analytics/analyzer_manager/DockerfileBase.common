@@ -1,0 +1,30 @@
+# dependencies for opencv cpp build
+RUN apt-get update && apt-get install -y pkg-config
+
+# Create working directory
+RUN mkdir -p /usr/src/app
+COPY ./cuda_library /usr/src/cuda_library
+WORKDIR /usr/src/cuda_library
+RUN python3 build_cuda.py
+
+
+# Downloads to user config dir
+COPY ./app/general/Arial.ttf /root/.config/Ultralytics/
+
+COPY ./resources /usr/src/resources
+COPY ./inference /usr/src/inference
+
+COPY ./assets /usr/src/assets
+
+# offline analytics related stuff
+COPY ./offline/app/ /usr/src/app/
+COPY ./offline/log_config.yaml ./offline/offline_main.sh /usr/src/app/
+RUN chmod +x /usr/src/app/offline_main.sh
+ENV PYTHONPATH="${PYTHONPATH}:/usr/src/automation"
+# #### for testing, can be removed once done
+# COPY offline/tests /usr/src/app/
+
+# utilities
+RUN apt install -y nano
+
+ENV IN_DOCKER True

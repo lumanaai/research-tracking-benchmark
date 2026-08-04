@@ -1,0 +1,2 @@
+name: "tracker-person-reid"
+backend: "tensorrt"

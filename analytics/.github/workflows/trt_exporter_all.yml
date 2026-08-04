@@ -1,0 +1,50 @@
+name: TRT Exporter - All Runners
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_command:
+        description: 'Execution parameters for TRT Exporter'
+        type: string
+        default: '-u --debug'
+
+jobs:
+  export_analytics_512:
+    name: Export on analytics_512
+    uses: ./.github/workflows/trt_exporter.yml
+    with:
+      run_command: ${{ inputs.run_command }}
+      name: analytics_512
+    secrets: inherit
+
+  export_analytics_600:
+    name: Export on analytics_600
+    uses: ./.github/workflows/trt_exporter.yml
+    with:
+      run_command: ${{ inputs.run_command }}
+      name: analytics_600
+    secrets: inherit
+
+  export_analytics_l4:
+    name: Export on analytics_l4
+    uses: ./.github/workflows/trt_exporter.yml
+    with:
+      run_command: ${{ inputs.run_command }}
+      name: analytics_l4
+    secrets: inherit
+
+  export_analytics_rtx2000:
+    name: Export on analytics_rtx2000
+    uses: ./.github/workflows/trt_exporter.yml
+    with:
+      run_command: ${{ inputs.run_command }}
+      name: analytics_rtx2000
+    secrets: inherit
+
+  export_analytics_rtx4000:
+    name: Export on analytics_rtx4000
+    uses: ./.github/workflows/trt_exporter.yml
+    with:
+      run_command: ${{ inputs.run_command }}
+      name: analytics_rtx4000
+    secrets: inherit

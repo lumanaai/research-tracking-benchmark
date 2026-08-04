@@ -174,6 +174,28 @@ def load_mot_dets(
     return per_frame
 
 
+def frame_stride_for_target_fps(native_fps: float, target_fps: float) -> int:
+    """Integer stride so the tracker sees roughly ``target_fps``.
+
+    ``stride = max(1, round(native_fps / target_fps))``. When ``target_fps`` is
+    at or above the native rate, every frame is kept (``stride=1``).
+    """
+    if target_fps <= 0:
+        raise ValueError(f"target_fps must be positive, got {target_fps}")
+    native = float(native_fps) if native_fps and native_fps > 0 else 30.0
+    if target_fps >= native:
+        return 1
+    return max(1, int(round(native / float(target_fps))))
+
+
+def kept_frame_ids(seq_len: int, stride: int = 1) -> List[int]:
+    """1-indexed MOT frame ids kept when stepping by ``stride``."""
+    if seq_len <= 0:
+        return []
+    step = max(1, int(stride))
+    return list(range(1, int(seq_len) + 1, step))
+
+
 def write_json(path: Path, obj: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(obj, indent=2, sort_keys=True) + "\n"

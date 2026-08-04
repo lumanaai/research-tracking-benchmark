@@ -1,0 +1,13 @@
+FROM lumixai/analytic_manager:latest
+
+RUN python3 -m pip install --upgrade pip
+RUN pip3 install boto3 dill==0.3.8
+RUN pip3 install polygraphy --extra-index-url https://pypi.ngc.nvidia.com
+RUN pip3 install --no-deps  open_clip_torch~=2.31.0 ftfy~=6.2.3 regex~=2024.11.6 timm~=1.0.15 wcwidth~=0.2.13 py-cpuinfo~=9.0.0
+RUN apt install -y lshw
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# if exist whl file in /tmp/whl/exports/ install it
+RUN if find /tmp/whl/exports/ -type f -name "*.ext" | grep -q .; then for f in /tmp/whl/exports/*.whl; do pip3 install "$f" --no-deps; done; fi

@@ -1,0 +1,42 @@
+# auto generated:
+analyzer_manager/Dockerfile
+analyzer_manager/Dockerfile.dockerignore
+analyzer_manager/DockerfileBase
+analyzer_manager/DockerfileBase.dockerignore
+analyzer_manager/DockerfileExporter
+analyzer_manager/inference/Dockerfile
+analyzer_tester/Dockerfile
+.env
+docker_start.sh
+
+# compiled
+analyzer_manager/cuda_library/parse_images_cuda.so
+analyzer_manager/cuda_library/image_extractor.so
+analyzer_manager/cuda_library/nvJpeg_encoder.so
+analyzer_manager/cuda_library/motion_estimator.so
+analyzer_manager/cuda_library/object_files/*.o
+analyzer_manager/cuda_library/motion_estimation_extractor.so
+
+# general
+*.log
+.idea
+**/__pycache__/*
+**/.pytest_cache/*
+
+.venv/
+.venv*/
+.vscode/
+
+.runs/*
+
+# project
+analyzer_manager/app/assets/*
+
+# platform weights
+weights/*
+!weights/all
+!weights/deprecated
+analyzer_manager/resources/weights/**/*.engine
+weights/all/**/*.engine
+.vscode
+/env_cred.json

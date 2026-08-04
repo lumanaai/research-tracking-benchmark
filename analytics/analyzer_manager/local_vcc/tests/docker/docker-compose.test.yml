@@ -1,0 +1,52 @@
+# Docker-level integration test for local_vcc.
+#
+# Compose brings up:
+#   * rabbitmq       - the message bus the worker consumes/publishes on
+#   * stub_vlm       - a tiny OpenAI-compatible HTTP server standing in for
+#                      llama-server (no GPU / no GGUF model required)
+#   * local_vcc      - the real local_vcc image with entrypoint overridden to
+#                      skip llama-server startup; PYTHONPATH already includes
+#                      /opt/local_vcc so ``python3 -m app.main`` works.
+#
+# The pytest driver (test_docker_integration.py) publishes an
+# AlertVerificationRequest to ``vccVerificationRequestQueue`` and waits for
+# an AlertVerificationResponse on ``vccVerificationResponseQueue``.
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "${RABBIT_PORT:-56720}:5672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  stub_vlm:
+    build:
+      context: ./stub_vlm
+    environment:
+      STUB_VERDICT: "${STUB_VERDICT:-yes}"
+
+  local_vcc:
+    image: lumixai/local_vcc:test
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      stub_vlm:
+        condition: service_started
+    environment:
+      RABBIT_HOST: rabbitmq
+      VCC_REQUEST_QUEUE: vccVerificationRequestQueue
+      VCC_RESPONSE_QUEUE: vccVerificationResponseQueue
+      VCC_QUEUE_TTL: "60000"
+      LLAMA_SERVER_URL: http://stub_vlm:7999
+      LLAMA_MODEL_NAME: stub-model
+      LOG_LEVEL: INFO
+    # Bypass /entrypoint.sh (which would try to run llama-server + wait for a
+    # real GGUF model). Run the Python worker directly against the stub.
+    entrypoint: ["python3", "-u", "-m", "app.main"]
+    volumes:
+      - ${SHARED_IMAGES_DIR}:/data/images:ro
+

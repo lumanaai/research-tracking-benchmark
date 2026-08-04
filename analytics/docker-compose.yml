@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:   
+  analyzer_manager: 
+    image: lumixai/analytic_manager
+    runtime: nvidia
+    environment:
+     - APP_ENV=$APP_ENV
+     - CONSOLE_LOG=$CONSOLE_LOG
+     - JETSON=$JETSON
+     - AI_TESTMODE='True'
+     - HOST=$HOST
+     - INSTANCE_ID=0
+     - TRITON_FORCED=$TRITON_FORCED
+
+    volumes:
+      - "${HOME}/dev/shm/:/dev/shm/"
+      - "${HOME}/configs/:/usr/src/app/configs:ro"
+      - "${HOME}/analytics_testing/:/usr/src/analytics_testing/"
+      - "${HOME}/assets/:/usr/src/app/assets/"
+      - "${HOME}/logs/:/usr/src/app/logs/"
+      - /etc/localtime:/etc/localtime:ro
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  inference_server:
+    image: lumixai/inference_server
+    runtime: nvidia
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - "${HOME}/assets/:/assets/"
+
+  offline_analytics:
+    image: lumixai/analytic_manager
+    command: ["/bin/bash", "-c", "./docker_start.sh --wait-for-infer --log-dir /usr/src/app/logs/ --log-name start_offline_analytics_log --app-name 'offline_analytics' --cmd 'sh offline_main.sh'"]
+    ports:
+      - "5055:5055"
+    volumes:
+      - "${HOME}/configs/:/usr/src/app/configs:ro"
+      - "${HOME}/logs/:/usr/src/app/logs/"
+
+
+  analyzer_tester: 
+    build: analyzer_tester/.
+    runtime: nvidia     
+    environment:
+     - APP_ENV=$APP_ENV
+     - VIDEO_TEST=$VIDEO_TEST
+     - BURST_TEST=$BURST_TEST
+     - JETSON=$JETSON
+
+    volumes:
+      - "${HOME}/dev/shm/:/dev/shm/"
+      - "${HOME}/analytics_testing/:/usr/src/analytics_testing/"
+      - "${HOME}/configs/:/usr/src/app/configs:ro"
+      - "${HOME}/assets/:/usr/src/app/assets/"      
+
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    
+  
+#TODO: replace to build and a specific version 
+  rabbitmq:
+    image: rabbitmq:3-management
+    #hostname: 'rabbitmq'
+    #container_name: 'rabbitmq'
+    #environment:
+    #  - RABBITMQ_DEFAULT_USER=myuser
+    #  - RABBITMQ_DEFAULT_PASS=mypassword    
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      # AMQP protocol port 
+      - 5672:5672
+      # HTTP management UI
+      - 15672:15672
+    #https://www.rabbitmq.com/monitoring.html#health-checks
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 10s
+      retries: 5    
+      start_period: 3s
+

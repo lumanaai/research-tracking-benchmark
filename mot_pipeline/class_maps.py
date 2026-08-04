@@ -7,7 +7,7 @@ Default policy: motorcycles/motorbikes are vehicles. Pass
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import FrozenSet, Optional
+from typing import FrozenSet, Mapping, Optional
 
 
 @dataclass(frozen=True)
@@ -118,3 +118,141 @@ def policy_for_yolo_weights(
     if "expert_eff" in stem:
         return EXPERT_EFF_VEHICLE.resolved(exclude_motorcycles)
     return COCO_VEHICLE.resolved(exclude_motorcycles)
+
+
+def class_space_for_yolo_weights(weights: Optional[object] = None) -> str:
+    from pathlib import Path
+
+    stem = Path(str(weights or "")).stem.lower()
+    return "expert_eff" if "expert_eff" in stem else "coco"
+
+
+# --- Analytics tracker class space -------------------------------------------
+# The in-house analytics tracker consumes ``(cls, subclass)`` per detection,
+# where ``subclass`` indexes analyzer_manager/assets/detection/32cls.csv:
+#   0 person, 1 bicycle, 2 car, 3 motorcycle, 4 bus, 5 train, 6 truck,
+#   19 forklift, 23 boat, ...
+# and ``cls`` is that row's coarse ``object_id`` (person=0, vehicle=1, ...),
+# which MiniClassHandler derives from the same CSV.
+A_PERSON = 0
+A_BICYCLE = 1
+A_CAR = 2
+A_MOTORCYCLE = 3
+A_BUS = 4
+A_TRUCK = 6
+A_FORKLIFT = 19
+
+
+@dataclass(frozen=True)
+class AnalyticsClassSpace:
+    """Maps one detection-class numbering onto 32cls subclass ids."""
+
+    mapping: Mapping[int, int]
+    default: Optional[int] = None
+    """Subclass for ids absent from ``mapping``. ``None`` drops them."""
+
+    def subclass_of(self, class_id: int) -> Optional[int]:
+        sub = self.mapping.get(int(class_id))
+        return self.default if sub is None else sub
+
+
+# FastTracker-Benchmark gt/labels.txt, 1-indexed:
+# 1 person, 2 bus_small, 3 bus_big, 4 truck_small, 5 truck_big, 6 car, 7 bike,
+# 8 motorbike, 9 ignore_region, 10 tractor, 11 trailor, 12 wheelchair,
+# 13 heavy_equipment, 14 pm, 15 umbrella
+ANALYTICS_FT_BENCH = AnalyticsClassSpace(
+    {
+        1: A_PERSON,
+        2: A_BUS,
+        3: A_BUS,
+        4: A_TRUCK,
+        5: A_TRUCK,
+        6: A_CAR,
+        7: A_BICYCLE,
+        8: A_MOTORCYCLE,
+        10: A_TRUCK,  # tractor — no 32cls equivalent
+        11: A_TRUCK,  # trailor
+        12: A_PERSON,  # wheelchair
+        13: A_FORKLIFT,  # heavy_equipment
+        14: A_MOTORCYCLE,  # pm (personal mobility)
+        15: A_PERSON,  # umbrella (carried by a person)
+    }
+)
+
+# UA-DETRAC converter numbering (see converters/prepare_ua_detrac.py).
+ANALYTICS_UA_DETRAC = AnalyticsClassSpace(
+    {1: A_CAR, 2: A_BUS, 3: A_TRUCK, 4: A_CAR},  # van -> truck, others -> car
+    default=A_CAR,
+)
+
+# TrafficMOT classes 1-10 (see the dataset ReadMe).
+ANALYTICS_TRAFFICMOT = AnalyticsClassSpace(
+    {
+        1: A_MOTORCYCLE,  # Motor_Bike
+        2: A_BUS,  # Bus
+        3: A_CAR,  # LMV
+        4: A_CAR,  # Auto
+        5: A_BICYCLE,  # Bike
+        6: A_PERSON,  # Pedestrian
+        7: A_TRUCK,  # LCV
+        8: A_CAR,  # E-rickshaw
+        9: A_TRUCK,  # Tractor
+        10: A_TRUCK,  # Truck
+    }
+)
+
+# CityFlow GT carries no class column (the class field is -1); all annotations
+# are vehicles, overwhelmingly cars.
+ANALYTICS_CITYFLOW = AnalyticsClassSpace({-1: A_CAR, 1: A_CAR}, default=A_CAR)
+
+ANALYTICS_COCO = AnalyticsClassSpace(
+    {
+        0: A_PERSON,
+        1: A_BICYCLE,
+        2: A_CAR,
+        3: A_MOTORCYCLE,
+        5: A_BUS,
+        7: A_TRUCK,
+    }
+)
+
+# The expert_eff detector already emits 32cls ids.
+ANALYTICS_EXPERT_EFF = AnalyticsClassSpace({}, default=None)
+
+ANALYTICS_CLASS_SPACES: dict[str, AnalyticsClassSpace] = {
+    "fasttracker_bench": ANALYTICS_FT_BENCH,
+    "ua_detrac": ANALYTICS_UA_DETRAC,
+    "trafficmot": ANALYTICS_TRAFFICMOT,
+    "cityflow": ANALYTICS_CITYFLOW,
+    "coco": ANALYTICS_COCO,
+    "expert_eff": ANALYTICS_EXPERT_EFF,
+    "analytics_32cls": ANALYTICS_EXPERT_EFF,
+}
+
+
+def analytics_class_space(space: str) -> AnalyticsClassSpace:
+    """Look up a detection-class numbering by name.
+
+    ``expert_eff`` / ``analytics_32cls`` are identity spaces: those detections
+    already use 32cls ids, so ids fall through unchanged.
+    """
+    if space in ("expert_eff", "analytics_32cls"):
+        return ANALYTICS_EXPERT_EFF
+    if space not in ANALYTICS_CLASS_SPACES:
+        raise KeyError(
+            f"Unknown analytics class space '{space}'. "
+            f"Choose from: {sorted(ANALYTICS_CLASS_SPACES)}"
+        )
+    return ANALYTICS_CLASS_SPACES[space]
+
+
+def to_analytics_subclass(class_id: int, space: str) -> Optional[int]:
+    """Translate a detection class id into a 32cls subclass id.
+
+    Returns ``None`` when the id has no sensible equivalent, in which case the
+    caller should drop the detection.
+    """
+    cs = analytics_class_space(space)
+    if cs is ANALYTICS_EXPERT_EFF:
+        return int(class_id) if int(class_id) >= 0 else None
+    return cs.subclass_of(class_id)

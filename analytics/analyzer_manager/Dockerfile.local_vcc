@@ -1,0 +1,84 @@
+# ============================================================
+# Local VCC (Visual Content Check) image
+# ============================================================
+# Base: official llama.cpp server-cuda image (has /app/llama-server)
+# Adds: Python 3 + RabbitMQ worker that consumes alert verification
+#       requests and queries the local llama-server VLM.
+# Entrypoint: starts llama-server in background, waits for
+#             model to load, then starts the Python worker.
+#
+# Build context = analyzer_manager/ (so we can share app/general with the
+# worker without code duplication):
+#
+#     docker build \
+#         -f analyzer_manager/Dockerfile.local_vcc \
+#         -t lumixai/local_vcc \
+#         analyzer_manager/
+# ============================================================
+# Pinned to a specific llama.cpp build (not the floating `server-cuda` tag,
+# which is repointed to a new image on every llama.cpp release/CI build).
+# This is the build that was current as of 2026-07-15 (llama.cpp b10015,
+# revision 12127defda4f41b7679cb2477a4b0d65ee6a0c8f per the image's own
+# org.opencontainers.image.version/.revision labels).
+# To bump deliberately: pull the new `server-cuda` tag, read its resolved
+# digest with `docker inspect ghcr.io/ggml-org/llama.cpp:server-cuda
+# --format='{{.RepoDigests}}'`, and update the tag/digest below.
+FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b10015@sha256:0d6c600a69e8bdaafd7b91ed6db9160906ee8148ee12a609cf4d52b4e17aabe8
+
+# Install Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install worker dependencies
+COPY local_vcc/requirements.txt /tmp/local_vcc_requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/local_vcc_requirements.txt
+
+# Copy the GGUF + mmproj files bundled under local_vcc/models/
+COPY local_vcc/models /models
+
+# ------------------------------------------------------------------
+# Source layout inside the container:
+#   /opt/local_vcc/app/       - local_vcc worker code
+#   /opt/local_vcc/general/   - shared modules from analyzer_manager/app/general
+#                               (imported as ``general.<module>``)
+# PYTHONPATH is set to /opt/local_vcc so both ``app.*`` and ``general.*``
+# imports resolve.
+# ------------------------------------------------------------------
+COPY local_vcc/app/                /opt/local_vcc/app/
+COPY app/general/__init__.py       /opt/local_vcc/general/__init__.py
+COPY app/general/logger.py         /opt/local_vcc/general/logger.py
+COPY app/general/alert_types.py    /opt/local_vcc/general/alert_types.py
+COPY app/general/proj.py           /opt/local_vcc/general/proj.py
+
+# config files - can ber overridden at runtime by mounting a volume over /usr/src/app/configs/
+RUN mkdir -p /usr/src/app/configs
+COPY assets/config.json            /usr/src/app/configs/config.json
+
+# Startup script
+COPY local_vcc/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENV PYTHONPATH=/opt/local_vcc
+ENV LLAMA_SERVER_URL=http://localhost:7999
+ENV LLAMA_SERVER_PORT=7999
+ENV LLAMA_MODEL_NAME=local_vcc
+ENV LLAMA_MODEL_PATH=/models/model.gguf
+ENV LLAMA_MMPROJ_PATH=/models/mmproj.gguf
+ENV LLAMA_EXTRA_ARGS=""
+ENV LLAMA_REQUEST_TIMEOUT=5
+ENV LLAMA_CTX_SIZE=4096
+ENV LLAMA_IMAGE_MAX_TOKENS=2048
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+# RabbitMQ / worker configuration (defaults; overridable at runtime)
+ENV RABBIT_HOST=rabbitmq
+ENV VCC_MAX_TIMEOUT_SECONDS=30
+ENV VCC_LOG_DIR=/usr/src/app/logs/
+ENV VCC_LOG_NAME=local_vcc
+ENV VCC_LOG_DAYS=14
+ENV LOG_LEVEL=INFO
+ENV IN_DOCKER=True
+
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,2 @@
+name: "tracker-vehicle-reid"
+backend: "tensorrt"

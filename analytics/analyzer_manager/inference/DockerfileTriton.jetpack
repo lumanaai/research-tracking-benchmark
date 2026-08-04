@@ -1,0 +1,97 @@
+FROM nvcr.io/nvidia/deepstream-l4t:6.2-base
+
+# Software
+RUN apt-get update
+RUN /opt/nvidia/deepstream/deepstream/user_additional_install.sh
+
+# Install dependencies
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            software-properties-common \
+            autoconf \
+            automake \
+            build-essential \
+            git \
+            libb64-dev \
+            libre2-dev \
+            libssl-dev \
+            libtool \
+            libboost-dev \
+            rapidjson-dev \
+            patchelf \
+            pkg-config \
+            libopenblas-dev \
+            libarchive-dev \
+            zlib1g-dev \
+            python3 \
+            python3-dev \
+            python3-pip
+
+RUN pip3 install --upgrade flake8 flatbuffers
+
+RUN apt-get -y install autoconf \
+            bc \
+            g++-8 \
+            gcc-8 \
+            clang-8 \
+            lld-8
+
+RUN pip3 install --upgrade expecttest xmlrunner hypothesis aiohttp pyyaml scipy ninja typing_extensions protobuf
+
+RUN pip3 install --upgrade https://developer.download.nvidia.com/compute/redist/jp/v50/pytorch/torch-1.12.0a0+2c916ef.nv22.3-cp38-cp38-linux_aarch64.whl
+
+RUN apt-get install -y --no-install-recommends \
+            curl \
+            jq
+
+RUN pip3 install --upgrade wheel setuptools cython && \
+    pip3 install --upgrade grpcio-tools numpy attrdict pillow
+
+RUN apt remove cmake
+# Using CMAKE installation instruction from:: https://apt.kitware.com/
+RUN apt update && apt install -y gpg wget && \
+      wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+            gpg --dearmor - |  \
+            tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+      . /etc/os-release && \
+      echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $UBUNTU_CODENAME main" | \
+      tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+      apt-get update && \
+      apt-get install -y --no-install-recommends cmake cmake-data
+
+RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+        libb64-0d \
+        libre2-5 \
+        libssl1.1 \
+        rapidjson-dev \
+        libopenblas-dev \
+        libarchive-dev \
+        zlib1g \
+        python3 \
+        python3-dev \
+        python3-pip
+
+RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+        curl \
+        jq
+
+RUN pip3 install --upgrade wheel setuptools && \
+    pip3 install --upgrade grpcio-tools numpy attrdict pillow
+
+ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/lib/llvm-8/lib"
+
+# install triton server from nvidia
+RUN wget https://github.com/triton-inference-server/server/releases/download/v2.35.0/tritonserver2.35.0-jetpack5.1.2.tgz
+RUN tar -zxvf tritonserver2.35.0-jetpack5.1.2.tgz
+RUN mv tritonserver /opt/tritonserver/
+
+# remove backends to preserve ram
+WORKDIR /opt/tritonserver/backends
+RUN  mv pytorch python onnxruntime tensorflow /mnt/
+
+# Set working directory
+WORKDIR /opt/tritonserver
+
+# set path of executable
+ENV PATH="$PATH:/opt/tritonserver/bin"

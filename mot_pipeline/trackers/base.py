@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+from mot_pipeline.mot_io import frame_stride_for_target_fps, kept_frame_ids
 from mot_pipeline.protocols import Tracker
 
 
@@ -17,6 +18,40 @@ def load_tracker_config(path: Optional[Path], defaults: Optional[Dict[str, Any]]
         with open(path) as f:
             cfg.update(json.load(f))
     return cfg
+
+
+def resolve_tracking_schedule(
+    meta: Dict[str, str],
+    seq_len: int,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Tuple[List[int], float, float, int]:
+    """Decide which frames to feed the tracker and which FPS to advertise.
+
+    Returns ``(frame_ids, tracker_fps, native_fps, stride)``.
+
+    * ``extra["frame_stride"]`` — explicit keep-every-N (wins over ``target_fps``).
+    * ``extra["target_fps"]`` — derive stride from ``seqinfo.ini`` ``frameRate``.
+    * Otherwise every frame is kept (``stride=1``).
+
+    ``tracker_fps`` is ``native_fps / stride`` so time-based buffers (FastTracker /
+    analytics ByteTrack) stay roughly wall-clock-correct under subsampling.
+    Output track rows still use the original MOT frame indices.
+    """
+    extra = extra or {}
+    native_fps = float(meta.get("frameRate", 30) or 30)
+    if native_fps <= 0:
+        native_fps = 30.0
+
+    if extra.get("frame_stride") is not None:
+        stride = max(1, int(extra["frame_stride"]))
+    elif extra.get("target_fps") is not None:
+        stride = frame_stride_for_target_fps(native_fps, float(extra["target_fps"]))
+    else:
+        stride = 1
+
+    frame_ids = kept_frame_ids(seq_len, stride)
+    tracker_fps = native_fps / float(stride)
+    return frame_ids, tracker_fps, native_fps, stride
 
 
 def write_mot_tracks(

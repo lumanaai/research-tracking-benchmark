@@ -1,0 +1,28 @@
+FROM nvcr.io/nvidia/l4t-jetpack:r36.4.0
+
+# set installation as non interactive
+ENV DEBIAN_FRONTEND=noninteractive
+
+# install pip
+RUN apt update
+RUN apt install -y python3-pip python3-distutils python3-setuptools python3-tk
+RUN python3 -m pip install --upgrade setuptools  pip
+
+RUN pip install numpy==1.26.4 scipy~=1.11.4 scikit-learn~=1.2.1 pandas~=1.5.3 numba>=0.58.1 PyCUDA~=2025.1 fastrlock~=0.8.3, appdirs~=1.4
+RUN pip install --no-deps cupy-cuda12x
+#install dependencies
+RUN apt install -y libopenmpi-dev libopenblas-dev
+
+#install libcusparselt
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
+RUN dpkg -i cuda-keyring_1.1-1_all.deb
+RUN apt update
+RUN apt -y install libcusparselt0 libcusparselt-dev
+
+# install opencv
+COPY install_ocv_jp6.sh .
+RUN sh install_ocv_jp6.sh
+
+# install torchvision - torch will be installed later from whl
+RUN pip install torchvision~=0.21.0
+# RUN pip3 install https://developer.download.nvidia.cn/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl

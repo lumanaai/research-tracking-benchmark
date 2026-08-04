@@ -1,0 +1,4 @@
+index,label,negative_label,category,type,high_conf,low_conf,calibrated,undefined_index
+0,failure,success,globalType,binary,0.5,0.5,0,-1
+1,no_glove,glove,gloveType,binary,0.5,0.5,0, 0
+2,transparent,colored,gloveColor,binary,0.5,0.5,0,0

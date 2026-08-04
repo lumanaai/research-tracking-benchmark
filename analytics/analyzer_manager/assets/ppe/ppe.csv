@@ -1,0 +1,3 @@
+index,label,negative_label,category,type,high_conf,low_conf,calibrated,undefined_index
+0,hard_hat,no_hard_hat,protectiveGearType,binary,0.5,0.5,1,1
+1,unknown,,protectiveGearType,undefined,0.5,0.5,1,-1

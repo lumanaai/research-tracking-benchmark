@@ -1,0 +1,26 @@
+# should be used in jetson enviroment
+FROM lumixai/analytic_manager:latest
+
+
+# Set working directory
+WORKDIR /usr/src/automation
+
+# Install requirements
+COPY automation/tests/analytics/requirements.txt  /usr/src/automation/tests/analytics/
+RUN python3 -m pip install -r /usr/src/automation/tests/analytics/requirements.txt
+
+# to avoid reinstalling open cv
+RUN python3 -m pip install tidecv --no-deps
+
+# Copy config files
+COPY ./assets/ /usr/src/app/configs/
+
+# Copy contents
+COPY . /usr/src
+
+# environment variable to use
+ENV TRITON_FORCED='True'
+
+CMD ["python3", "-m", "pytest", "tests/analytics", "-s"]
+
+

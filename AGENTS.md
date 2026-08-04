@@ -315,7 +315,7 @@ Default keep-sets drop person / bicycle / ignore regions and **include** motorcy
 
 Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`.  
 Detectors: `gt`, `yolov8`, `existing` (reuse each sequence's `det/det.txt`), `yolox` (stub).  
-Trackers: `fasttracker`, `ocsort`, `hybridsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
 
 Default FastTracker configs (override with `--tracker-config`):
 - `fasttracker_bench` → `configs/trackers/fasttracker/fasttracker_bench.json`
@@ -323,6 +323,8 @@ Default FastTracker configs (override with `--tracker-config`):
 - `trafficmot` / `cityflow` → `general_no_roi.json`
 
 OC-SORT / HybridSORT defaults: `configs/trackers/ocsort/default.json` and `configs/trackers/hybridsort/default.json` (all benchmarks).
+
+Analytics ByteTrack (live import from `analytics/analyzer_manager/app/tracking/`): default `configs/trackers/analytics_bytetrack/benchmark.json`; as-deployed settings in `production.json`. Shim lives in `mot_pipeline/trackers/analytics_shim.py` — no changes to the analytics clone.
 
 Other benchmark defaults: UA-DETRAC / CityFlow → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
 
@@ -332,15 +334,23 @@ Clones live at project root: `OC_SORT/`, `HybridSORT/`. Same CLI as FastTracker 
 
 ```bash
 .venv/bin/python -m mot_pipeline.run all \
-  --benchmark fasttracker_bench --tracker ocsort --detector existing \
-  --sequences task_day_occlusion
+ --benchmark fasttracker_bench --tracker ocsort --detector existing \
+ --sequences task_day_occlusion
 
 .venv/bin/python -m mot_pipeline.run all \
-  --benchmark fasttracker_bench --tracker hybridsort --detector existing \
-  --sequences task_day_occlusion
+ --benchmark fasttracker_bench --tracker hybridsort --detector existing \
+ --sequences task_day_occlusion
 ```
 
-Hybrid-SORT-ReID and TrafficTrack are deferred — see [`TODOs.md`](TODOs.md).
+### Analytics ByteTrack (in-house)
+
+```bash
+.venv/bin/python -m mot_pipeline.run all \
+ --benchmark fasttracker_bench --tracker analytics_bytetrack --detector existing \
+ --sequences task_day_occlusion
+```
+
+Hybrid-SORT-ReID, ByteSReid, and TrafficTrack are deferred — see [`TODOs.md`](TODOs.md).
 
 ### FastTracker on all four benchmarks
 

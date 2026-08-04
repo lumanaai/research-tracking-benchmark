@@ -1,0 +1,68 @@
+# pre-installed in docker (R35.2.1):
+# TensorFlow 2.11.0
+# PyTorch v2.0.0
+# torchvision v0.14.1
+# torchaudio v0.13.1
+# onnx 1.13.0
+# CuPy 11.5.0
+# numpy 1.21.1
+# numba 0.56.4
+# PyCUDA 2022.2
+# OpenCV 4.5.0 (with CUDA)
+# pandas 1.5.3
+# scipy 1.10.0
+# scikit-learn 1.2.1
+# JupyterLab 3.6.1
+
+# Base ----------------------------------------
+Pillow>=8.1.3
+PyYAML>=6.0
+requests>=2.26.0
+tqdm>=4.64.0
+
+# Logging -------------------------------------
+tensorboard>=2.4.1
+
+# Plotting ------------------------------------
+seaborn>=0.11.0
+imageio>=2.16.0
+
+# Extras --------------------------------------
+psutil>=5.9.4
+Cython>=0.29.24
+h5py>=2.10.0
+six>=1.16.0
+future>=0.18.2
+yacs>=0.1.8
+gdown>=4.5.0
+pika>=1.3.0
+easydict>=1.10
+pathlib>=1.0.1
+webcolors>=1.11.0
+cython-bbox>=0.1.3
+scikit-image>=0.17.2
+pycocotools
+loguru>=0.6.0
+tabulate>=0.8.10
+pyclipper~=1.3.0
+
+flake8>=5.0.4
+isort>=4.3.21
+thop  # FLOPs computation
+tritonclient[http,grpc]>=2.35.0,<2.45.0
+shapely>=2.0.2
+pydantic>=2.7.0
+msgpack~=1.1.0
+msgpack-numpy~=0.4.8
+
+# qudida >=0.0.4  # --no-deps
+# albumentations>=1.3.1 # --no-deps
+# ultralytics==8.0.222  # --no-deps
+# lap~=0.4.0  # versions issue - will be installed separetly
+
+# offline analytics related
+fastapi
+uvicorn[standard]
+
+pyzmq~=26.0.0
+
