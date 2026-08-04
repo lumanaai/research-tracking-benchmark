@@ -13,6 +13,7 @@ Deferred items for the MOT pipeline. Do not lose these when wiring new trackers.
 
 - [ ] **Add ReID** to trackers that support it:
   - Hybrid-SORT-ReID (`trackers/hybrid_sort_tracker/hybrid_sort_reid.py` + FastReID).
+  - BoT-SORT-ReID (`BoT-SORT/tracker/bot_sort.py` with `with_reid=True` + FastReID weights). Motion-only `botsort` is already wired; enable appearance later without changing the detection-fed contract.
   - Optionally Deep-OC-SORT or other appearance forks of OC-SORT.
 - [ ] Store ReID weights on SSD under `/media/7TBSSD/data/tracking/weights/reid/` (not on the NAS).
 - [ ] Prefer vehicle-domain ReID when available; pedestrian-trained SBS models may transfer poorly to traffic cams.

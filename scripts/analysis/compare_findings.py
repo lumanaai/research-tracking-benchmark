@@ -33,14 +33,25 @@ METRIC_COLS = [
     "MT",
     "ML",
 ]
+# Within a benchmark, bold the best value per metric (↑ higher better, ↓ lower better).
+HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "MT"}
+LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
 BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow"]
 TRACKER_ORDER = [
     "fasttracker",
     "ocsort",
     "hybridsort",
     "analytics_bytetrack",
+    "botsort",
     "traffictrack",
 ]
+# Native seqinfo / converter frameRate when tracking all frames (no --fps).
+NATIVE_FPS = {
+    "fasttracker_bench": 30.0,
+    "ua_detrac": 25.0,
+    "trafficmot": 10.0,
+    "cityflow": 10.0,
+}
 
 
 def _normalize_fps(val: object) -> Optional[float]:
@@ -100,6 +111,10 @@ def _load_rows(
                     # Full-rate rows (no target_fps) never match an explicit --target-fps.
                     if row_fps is None or abs(row_fps - float(target_fps)) > 1e-6:
                         continue
+                else:
+                    # Default (no --target-fps): full-rate runs only.
+                    if row_fps is not None:
+                        continue
                 rows.append(r)
 
     if not latest_only:
@@ -147,9 +162,57 @@ def _fmt(col: str, val: str) -> str:
         return f"{x:.3f}"
     if col in ("IDSW", "Frag", "MT", "ML", "FP", "FN", "sequence_count"):
         return f"{x:.0f}"
-    if col == "target_fps":
+    if col in ("target_fps", "FPS"):
         return f"{x:g}"
     return f"{x}"
+
+
+def _display_fps(r: Dict[str, str]) -> str:
+    """Effective tracking FPS: target_fps if set, else native benchmark rate."""
+    target = _normalize_fps(r.get("target_fps"))
+    if target is not None:
+        return f"{target:g}"
+    native = NATIVE_FPS.get(r.get("benchmark") or "")
+    if native is None:
+        return "—"
+    return f"{native:g}"
+
+
+def _metric_float(val: object) -> Optional[float]:
+    if val in ("", None):
+        return None
+    try:
+        return float(val)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _best_metric_values(
+    group: List[Dict[str, str]],
+) -> Dict[str, float]:
+    """Per-metric best numeric value within a benchmark group."""
+    best: Dict[str, float] = {}
+    for col in METRIC_COLS:
+        vals = [v for v in (_metric_float(r.get(col)) for r in group) if v is not None]
+        if not vals:
+            continue
+        if col in LOWER_IS_BETTER:
+            best[col] = min(vals)
+        elif col in HIGHER_IS_BETTER:
+            best[col] = max(vals)
+        else:
+            best[col] = max(vals)
+    return best
+
+
+def _fmt_metric_cell(col: str, val: str, best: Optional[float]) -> str:
+    text = _fmt(col, val)
+    if best is None or text == "—":
+        return text
+    # Compare on displayed precision so equal-looking ties are all marked.
+    if text == _fmt(col, str(best)):
+        return f"**{text}**"
+    return text
 
 
 def render_markdown(rows: Iterable[Dict[str, str]]) -> str:
@@ -158,11 +221,15 @@ def render_markdown(rows: Iterable[Dict[str, str]]) -> str:
         "benchmark",
         "tracker",
         "detector_id",
-        "target_fps",
+        "FPS",
         "seqs",
         *METRIC_COLS,
         "run_id",
     ]
+    n_cols = len(headers)
+    # Thick visual break between benchmark blocks (GFM keeps this as a table row).
+    bench_sep = "| " + " | ".join("═══" for _ in range(n_cols)) + " |"
+
     lines = [
         "# Tracker comparison",
         "",
@@ -171,17 +238,30 @@ def render_markdown(rows: Iterable[Dict[str, str]]) -> str:
         "| " + " | ".join(headers) + " |",
         "|" + "|".join("---" for _ in headers) + "|",
     ]
+
+    # Precompute best-per-metric within each contiguous benchmark group.
+    groups: List[List[Dict[str, str]]] = []
     for r in rows:
-        cells = [
-            r.get("benchmark", ""),
-            r.get("tracker", ""),
-            r.get("detector_id", ""),
-            _fmt("target_fps", r.get("target_fps", "")),
-            _fmt("sequence_count", r.get("sequence_count", "")),
-            *(_fmt(c, r.get(c, "")) for c in METRIC_COLS),
-            r.get("run_id", ""),
-        ]
-        lines.append("| " + " | ".join(cells) + " |")
+        if not groups or (groups[-1][0].get("benchmark") or "") != (r.get("benchmark") or ""):
+            groups.append([r])
+        else:
+            groups[-1].append(r)
+
+    for gi, group in enumerate(groups):
+        if gi > 0:
+            lines.append(bench_sep)
+        best = _best_metric_values(group)
+        for r in group:
+            cells = [
+                r.get("benchmark", ""),
+                r.get("tracker", ""),
+                r.get("detector_id", ""),
+                _display_fps(r),
+                _fmt("sequence_count", r.get("sequence_count", "")),
+                *(_fmt_metric_cell(c, r.get(c, ""), best.get(c)) for c in METRIC_COLS),
+                r.get("run_id", ""),
+            ]
+            lines.append("| " + " | ".join(cells) + " |")
     lines.append("")
     return "\n".join(lines)
 
@@ -193,6 +273,7 @@ def render_csv(rows: Iterable[Dict[str, str]]) -> str:
         "tracker",
         "detector_id",
         "detector",
+        "FPS",
         "target_fps",
         "sequence_count",
         *METRIC_COLS,
@@ -206,7 +287,9 @@ def render_csv(rows: Iterable[Dict[str, str]]) -> str:
     w = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
     w.writeheader()
     for r in rows:
-        w.writerow(r)
+        out = dict(r)
+        out["FPS"] = _display_fps(r)
+        w.writerow(out)
     return buf.getvalue()
 
 
@@ -233,7 +316,8 @@ def main() -> None:
         "--target-fps",
         type=float,
         default=None,
-        help="Only keep runs tracked at this target FPS (from config extra.target_fps).",
+        help="Only keep runs tracked at this target FPS. "
+        "Omit to keep full-rate runs and show each benchmark's native FPS.",
     )
     p.add_argument(
         "--all-rows",

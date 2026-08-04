@@ -75,9 +75,14 @@ class YoloUltralyticsDetector(Detector):
         if meta_path.is_file() and not force:
             prev = read_json(meta_path)
             # Allow reuse if core knobs match. Empty prev → treat as missing.
+            # Weights are compared by filename so models/foo.pt and
+            # /media/.../weights/foo.pt share the same detection cache.
             if prev:
-                keys = ("weights", "imgsz", "conf", "iou", "exclude_motorcycles", "keep")
-                if any(prev.get(k) != meta.get(k) for k in keys):
+                keys = ("imgsz", "conf", "iou", "exclude_motorcycles", "keep")
+                mismatch = any(prev.get(k) != meta.get(k) for k in keys)
+                prev_w = Path(str(prev.get("weights") or "")).name
+                cur_w = Path(str(meta.get("weights") or "")).name
+                if mismatch or (prev_w and cur_w and prev_w != cur_w):
                     force = True
         # Atomic / idempotent: safe under multi-GPU sharded detect.
         if force or not meta_path.is_file() or not read_json(meta_path):

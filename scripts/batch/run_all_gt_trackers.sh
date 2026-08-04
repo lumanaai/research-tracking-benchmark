@@ -23,7 +23,7 @@ fi
 
 # Default: all benchmarks × motion trackers (skip traffictrack stub).
 BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow})
-TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack botsort})
 DETECTOR="${DETECTOR:-gt}"
 # Used when DETECTOR=yolov8 (e.g. cuda:0). Ignored for gt/existing.
 DEVICE="${DEVICE:-}"

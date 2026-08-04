@@ -120,12 +120,13 @@ Standalone (legacy, writes into each sequence’s `det/det.txt`):
 
 `all` = detect (cached) → track → TrackEval → update findings index.
 
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `botsort` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
 
 Default configs:
 - FastTracker: per-benchmark (`fasttracker_bench.json`, `detrac_no_roi.json`, `general_no_roi.json`)
 - OC-SORT: `mot_pipeline/configs/trackers/ocsort/default.json`
 - HybridSORT: `mot_pipeline/configs/trackers/hybridsort/default.json`
+- BoT-SORT: `mot_pipeline/configs/trackers/botsort/default.json` (ReID off; CMC `none` by default)
 - Analytics ByteTrack: `mot_pipeline/configs/trackers/analytics_bytetrack/benchmark.json` (pass `production.json` for the as-deployed settings)
 
 ### FastTracker-Benchmark
@@ -148,7 +149,7 @@ Default configs:
   --benchmark fasttracker_bench --tracker fasttracker --detector existing \
   --sequences task_day_occlusion --run-id ft_occ_existing
 
-# OC-SORT / HybridSORT on the same dets
+# OC-SORT / HybridSORT / BoT-SORT on the same dets
 .venv/bin/python -m mot_pipeline.run all \
   --benchmark fasttracker_bench --tracker ocsort --detector existing \
   --sequences task_day_occlusion --run-id oc_occ_existing
@@ -156,6 +157,10 @@ Default configs:
 .venv/bin/python -m mot_pipeline.run all \
   --benchmark fasttracker_bench --tracker hybridsort --detector existing \
   --sequences task_day_occlusion --run-id hs_occ_existing
+
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker botsort --detector existing \
+  --sequences task_day_occlusion --run-id bs_occ_existing
 ```
 
 ### Analytics ByteTrack (in-house tracker)
@@ -398,9 +403,43 @@ DETECTOR=yolov8 GPUS="0 1 2 3 4 5 6 7" SHARD_SEQS=1 TRACK_JOBS=12 ./scripts/batc
 | Use existing dets | `--detector existing` |
 | Run YOLO | `--detector yolov8 --device cuda:0` |
 | Oracle association | `--detector gt` |
-| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack} --detector …` |
+| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack,botsort} --detector …` |
 | Parallel YOLO sweep | `./scripts/batch/run_all_parallel.sh` |
 | Re-eval | `-m mot_pipeline.run eval --run-id …` |
 | Overlay tracks | `scripts/visualize/visualize_mot_results.py --frames … --results … --out …` |
 | Compare runs | `scripts/analysis/compare_findings.py --detector-id …` |
 | Findings CSV | `experiments/_findings/<bench>/<tracker>/<det_id>/findings.csv` |
+
+
+--------------------------------------------
+GPUS="0 1 2 3 4 5 6 7" TRACK_JOBS=16 FPS_VALUES="5" ./scripts/batch/run_all.sh
+
+# GT oracle dets
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id gt_vehicles --format both \
+  --out results/comparisons/gt_vehicles.md
+
+# GT oracle dets FPS=5
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id gt_vehicles --target-fps 5 --format both \
+  --out results/comparisons/gt_vehicles_fps5.md
+
+# GT oracle dets FPS=10
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id gt_vehicles --target-fps 10 --format both \
+  --out results/comparisons/gt_vehicles_fps10.md
+
+# native FPS
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles --format both \
+  --out results/comparisons/yolov8m_expert_eff.md
+
+# FPS=10
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles --target-fps 10 --format both \
+  --out results/comparisons/yolov8m_expert_eff_fps10.md
+
+# FPS=5
+.venv/bin/python scripts/analysis/compare_findings.py \
+  --detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles --target-fps 5 --format both \
+  --out results/comparisons/yolov8m_expert_eff_fps5.md

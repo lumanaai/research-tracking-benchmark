@@ -315,42 +315,46 @@ Default keep-sets drop person / bicycle / ignore regions and **include** motorcy
 
 Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`.  
 Detectors: `gt`, `yolov8`, `existing` (reuse each sequence's `det/det.txt`), `yolox` (stub).  
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
 
 Default FastTracker configs (override with `--tracker-config`):
 - `fasttracker_bench` → `configs/trackers/fasttracker/fasttracker_bench.json`
 - `ua_detrac` → `detrac_no_roi.json`
 - `trafficmot` / `cityflow` → `general_no_roi.json`
 
-OC-SORT / HybridSORT defaults: `configs/trackers/ocsort/default.json` and `configs/trackers/hybridsort/default.json` (all benchmarks).
+OC-SORT / HybridSORT / BoT-SORT defaults: `configs/trackers/ocsort/default.json`, `configs/trackers/hybridsort/default.json`, and `configs/trackers/botsort/default.json` (all benchmarks).
 
 Analytics ByteTrack (live import from `analytics/analyzer_manager/app/tracking/`): default `configs/trackers/analytics_bytetrack/benchmark.json`; as-deployed settings in `production.json`. Shim lives in `mot_pipeline/trackers/analytics_shim.py` — no changes to the analytics clone.
 
 Other benchmark defaults: UA-DETRAC / CityFlow → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
 
-### OC-SORT / HybridSORT (motion-only)
+### OC-SORT / HybridSORT / BoT-SORT (motion-only)
 
-Clones live at project root: `OC_SORT/`, `HybridSORT/`. Same CLI as FastTracker — swap `--tracker`:
+Clones live at project root: `OC_SORT/`, `HybridSORT/`, `BoT-SORT/`. Same CLI as FastTracker — swap `--tracker`. BoT-SORT runs **without ReID** (`with_reid` forced off; FastReID stubbed in `botsort_shim.py`). Default CMC is `none` (no frame I/O); set `"cmc_method": "sparseOptFlow"` in the tracker JSON to enable camera-motion compensation.
 
 ```bash
 .venv/bin/python -m mot_pipeline.run all \
- --benchmark fasttracker_bench --tracker ocsort --detector existing \
- --sequences task_day_occlusion
+  --benchmark fasttracker_bench --tracker ocsort --detector existing \
+  --sequences task_day_occlusion
 
 .venv/bin/python -m mot_pipeline.run all \
- --benchmark fasttracker_bench --tracker hybridsort --detector existing \
- --sequences task_day_occlusion
+  --benchmark fasttracker_bench --tracker hybridsort --detector existing \
+  --sequences task_day_occlusion
+
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker botsort --detector existing \
+  --sequences task_day_occlusion
 ```
 
 ### Analytics ByteTrack (in-house)
 
 ```bash
 .venv/bin/python -m mot_pipeline.run all \
- --benchmark fasttracker_bench --tracker analytics_bytetrack --detector existing \
- --sequences task_day_occlusion
+  --benchmark fasttracker_bench --tracker analytics_bytetrack --detector existing \
+  --sequences task_day_occlusion
 ```
 
-Hybrid-SORT-ReID, ByteSReid, and TrafficTrack are deferred — see [`TODOs.md`](TODOs.md).
+Hybrid-SORT-ReID, ByteSReid, BoT-SORT-ReID, and TrafficTrack are deferred — see [`TODOs.md`](TODOs.md).
 
 ### FastTracker on all four benchmarks
 
@@ -391,9 +395,10 @@ Hybrid-SORT-ReID, ByteSReid, and TrafficTrack are deferred — see [`TODOs.md`](
 
 1. Implement `mot_pipeline/trackers/<name>.py` with `track_sequence(seq_dir, det_path, out_path, config, extra=…)`.
 2. Contract: MOT dets in **original image pixels** → MOT track txt `frame,id,x,y,w,h,conf,-1,-1,-1`.
-3. Register in `mot_pipeline/trackers/__init__.py` (`TRACKERS` dict).
-4. Drop hyperparameter JSONs under `mot_pipeline/configs/trackers/<name>/`.
-5. See `mot_pipeline/trackers/fasttracker.py` as the reference adapter (no shelling out to upstream CLIs).
+3. Register in `mot_pipeline/trackers/__init__.py` (`TRACKERS` dict) and CLI choices in `mot_pipeline/run.py`.
+4. Drop hyperparameter JSONs under `mot_pipeline/configs/trackers/<name>/`; wire `_default_tracker_config` / `_tracker_defaults`.
+5. Add the name to batch `TRACKERS=(…)` defaults and `TRACKER_ORDER` in `scripts/analysis/compare_findings.py`.
+6. See `mot_pipeline/trackers/fasttracker.py` as the reference adapter (no shelling out to upstream CLIs). For clones with awkward imports (analytics `general`, BoT-SORT FastReID), prefer a shim (`analytics_shim.py` / `botsort_shim.py`) over editing the clone.
 
 ### Metrics
 
@@ -405,6 +410,6 @@ Cross-run indexes live at `experiments/_findings/<benchmark>/<tracker>/<detector
 - Prefer scripts under `scripts/<area>/` (`visualize/`, `convert/`, `detect/`, `batch/`, `analysis/`) with clear CLI args. Keep `mot_pipeline/` as the package; do not nest clones under `scripts/`.
 - Dataset paths should be arguments, not hard-coded — defaults may point at the SSD paths above.
 - Put generated videos, caches, and checkpoints next to the data on `/media/7TBSSD/data/tracking/`, not on the NAS project root.
-- Batch sweeps: `./scripts/batch/run_all_gt_trackers.sh` (GT oracle) and `./scripts/batch/run_all_parallel.sh` (multi-GPU detect → track → eval).
-- Findings tables: `.venv/bin/python scripts/analysis/compare_findings.py --detector-id …`.
+- Batch sweeps: `./scripts/batch/run_all.sh`, `./scripts/batch/run_all_gt_trackers.sh` (GT oracle), and `./scripts/batch/run_all_parallel.sh` (multi-GPU detect → track → eval). Default `TRACKERS` includes `botsort`.
+- Findings tables: `.venv/bin/python scripts/analysis/compare_findings.py --detector-id …` (or `./scripts/analysis/run_all_compare_findings.sh`).
 - Do not commit secrets, raw dataset dumps, or the venv contents; `.venv` is a symlink only.

@@ -30,6 +30,7 @@ from mot_pipeline.protocols import RunSpec
 from mot_pipeline.registry import get_benchmark, get_detector, get_tracker
 from mot_pipeline.trackers.analytics_bytetrack import DEFAULT_CFG as AB_DEFAULTS
 from mot_pipeline.trackers.base import load_tracker_config
+from mot_pipeline.trackers.botsort import DEFAULT_CFG as BS_DEFAULTS
 from mot_pipeline.trackers.fasttracker import DEFAULT_CFG as FT_DEFAULTS
 from mot_pipeline.trackers.hybridsort import DEFAULT_CFG as HS_DEFAULTS
 from mot_pipeline.trackers.ocsort import DEFAULT_CFG as OC_DEFAULTS
@@ -81,6 +82,8 @@ def _default_tracker_config(tracker: str, benchmark: str) -> Optional[Path]:
         return cfg_root / "hybridsort" / "default.json"
     if tracker == "analytics_bytetrack":
         return cfg_root / "analytics_bytetrack" / "benchmark.json"
+    if tracker == "botsort":
+        return cfg_root / "botsort" / "default.json"
     return None
 
 
@@ -93,6 +96,8 @@ def _tracker_defaults(tracker: str) -> dict:
         return dict(HS_DEFAULTS)
     if tracker == "analytics_bytetrack":
         return dict(AB_DEFAULTS)
+    if tracker == "botsort":
+        return dict(BS_DEFAULTS)
     return {}
 
 
@@ -404,6 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "ocsort",
                     "hybridsort",
                     "analytics_bytetrack",
+                    "botsort",
                 ],
             )
             sp.add_argument(

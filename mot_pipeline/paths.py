@@ -25,6 +25,7 @@ TRACKEREVAL_ROOT = PROJECT_ROOT / "FastTracker" / "TrackEval"
 FASTTRACKER_ROOT = PROJECT_ROOT / "FastTracker"
 OCSORT_ROOT = PROJECT_ROOT / "OC_SORT"
 HYBRIDSORT_ROOT = PROJECT_ROOT / "HybridSORT"
+BOTSORT_ROOT = PROJECT_ROOT / "BoT-SORT"
 
 # In-house analytics monorepo; only analyzer_manager/app/tracking/ is used.
 ANALYTICS_ROOT = PROJECT_ROOT / "analytics"
