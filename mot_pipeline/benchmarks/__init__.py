@@ -1,5 +1,6 @@
 from mot_pipeline.benchmarks.cityflow import CityFlowBenchmark
 from mot_pipeline.benchmarks.fasttracker_bench import FastTrackerBenchBenchmark
+from mot_pipeline.benchmarks.lumana_benchmark import LumanaBenchmark
 from mot_pipeline.benchmarks.trafficmot import TrafficMOTBenchmark
 from mot_pipeline.benchmarks.ua_detrac import UADetracBenchmark
 
@@ -8,6 +9,7 @@ BENCHMARKS = {
     "ua_detrac": UADetracBenchmark,
     "trafficmot": TrafficMOTBenchmark,
     "cityflow": CityFlowBenchmark,
+    "lumana_benchmark": LumanaBenchmark,
 }
 
 

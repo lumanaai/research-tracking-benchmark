@@ -1,6 +1,6 @@
 # Tracker comparison
 
-_20 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
+_25 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
 
 | benchmark | tracker | detector_id | FPS | seqs | HOTA | DetA | AssA | MOTA | IDF1 | IDSW | Frag | MT | ML | run_id |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -27,3 +27,9 @@ _20 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
 | cityflow | hybridsort | gt_vehicles | 10 | 36 | 0.942 | 0.960 | 0.924 | 0.959 | 0.951 | 65 | 163 | 654 | 16 | cityflow_hybridsort_gt_20260804_155025 |
 | cityflow | analytics_bytetrack | gt_vehicles | 10 | 36 | 0.964 | **0.989** | 0.939 | 0.989 | 0.957 | **29** | 186 | 766 | 1 | cityflow_analytics_bytetrack_gt_20260804_155025 |
 | cityflow | botsort | gt_vehicles | 10 | 36 | **0.965** | 0.979 | **0.951** | **0.999** | **0.973** | 85 | 194 | **808** | **0** | cityflow_botsort_gt_20260804_155025 |
+| ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ |
+| lumana_benchmark | fasttracker | gt_vehicles | 20 | 24 | 0.903 | 0.954 | 0.854 | 0.979 | 0.904 | 277 | 578 | 404 | 7 | lumana_benchmark_fasttracker_gt_20260812_112702 |
+| lumana_benchmark | ocsort | gt_vehicles | 20 | 24 | 0.919 | 0.989 | 0.855 | 0.988 | 0.899 | 310 | **555** | 346 | 25 | lumana_benchmark_ocsort_gt_20260812_112702 |
+| lumana_benchmark | hybridsort | gt_vehicles | 20 | 24 | 0.918 | 0.989 | 0.852 | 0.988 | 0.896 | 308 | 560 | 346 | 25 | lumana_benchmark_hybridsort_gt_20260812_112702 |
+| lumana_benchmark | analytics_bytetrack | gt_vehicles | 20 | 24 | **0.932** | **0.997** | **0.871** | 0.997 | **0.916** | **238** | 558 | 435 | 6 | lumana_benchmark_analytics_bytetrack_gt_20260812_112702 |
+| lumana_benchmark | botsort | gt_vehicles | 20 | 24 | 0.913 | 0.993 | 0.840 | **0.998** | 0.889 | 348 | 558 | **464** | **0** | lumana_benchmark_botsort_gt_20260812_112702 |

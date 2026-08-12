@@ -63,6 +63,7 @@ CLASS_NAMES = {
         10: "Truck",
     },
     "cityflow": {1: "vehicle"},
+    "lumana_benchmark": {1: "vehicle"},
 }
 
 BENCH_META = [
@@ -121,6 +122,20 @@ BENCH_META = [
             "Typically 10 FPS (some cams 8); GT on train + validation; test has no public GT.",
             "Stats below use the raw CityFlow tree (not the possibly-partial MOT extract).",
             "Best for multi-view / re-ID / cross-camera identity; single-cam MOT eval still valid.",
+        ],
+    },
+    {
+        "id": "lumana_benchmark",
+        "mot_name": "LumanaBenchmark",
+        "split": "train",
+        "source_mode": "mot",
+        "dataset_root": str(RAW_DATASETS["lumana_benchmark"]),
+        "source": "LumanaBenchmark (internal GT)",
+        "notes": [
+            "Manually validated vehicle MOT GT (24 sequences); class_id always 1.",
+            "MOT-native under gt_annotations_manually_validated/; mot/ train is a symlink.",
+            "Per-sequence FPS varies (~13–30); dims in seqinfo.ini (typically 1920×1080).",
+            "Frames/videos may be absent — GT-oracle track/eval works without img1.",
         ],
     },
 ]

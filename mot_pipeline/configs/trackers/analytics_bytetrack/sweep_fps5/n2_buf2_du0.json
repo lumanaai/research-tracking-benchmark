@@ -1,0 +1,18 @@
+{
+  "name": "bytetrack",
+  "track_thresh": 0.25,
+  "untrack_objects": [],
+  "first_track_compensation": 0.1,
+  "baseline_track_compensation": 0.2,
+  "use_per_class_thresh": true,
+  "detector_unique": false,
+  "n_init": 2,
+  "track_buffer_seconds": 2.0,
+  "match_thresh": 0.96,
+  "match_thresh_2": 0.84,
+  "match_thresh_3": 0.6,
+  "min_box_area": 10,
+  "mot20": false,
+  "use_timestamp": false,
+  "night_mode": false
+}

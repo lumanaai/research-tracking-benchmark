@@ -69,6 +69,13 @@ CITYFLOW = ClassPolicy(
     motorcycle_ids=frozenset(),
 )
 
+# LumanaBenchmark: single class vehicle=1.
+LUMANA = ClassPolicy(
+    keep=None,
+    drop=frozenset(),
+    motorcycle_ids=frozenset(),
+)
+
 # COCO ids used by stock YOLOv8.
 COCO_VEHICLE = ClassPolicy(
     keep=frozenset({2, 3, 5, 7}),  # car, motorcycle, bus, truck
@@ -90,6 +97,7 @@ BENCHMARK_POLICIES = {
     "ua_detrac": UA_DETRAC,
     "trafficmot": TRAFFICMOT,
     "cityflow": CITYFLOW,
+    "lumana_benchmark": LUMANA,
 }
 
 
@@ -205,6 +213,9 @@ ANALYTICS_TRAFFICMOT = AnalyticsClassSpace(
 # are vehicles, overwhelmingly cars.
 ANALYTICS_CITYFLOW = AnalyticsClassSpace({-1: A_CAR, 1: A_CAR}, default=A_CAR)
 
+# LumanaBenchmark: class_id always 1 (vehicle).
+ANALYTICS_LUMANA = AnalyticsClassSpace({1: A_CAR}, default=A_CAR)
+
 ANALYTICS_COCO = AnalyticsClassSpace(
     {
         0: A_PERSON,
@@ -224,6 +235,7 @@ ANALYTICS_CLASS_SPACES: dict[str, AnalyticsClassSpace] = {
     "ua_detrac": ANALYTICS_UA_DETRAC,
     "trafficmot": ANALYTICS_TRAFFICMOT,
     "cityflow": ANALYTICS_CITYFLOW,
+    "lumana_benchmark": ANALYTICS_LUMANA,
     "coco": ANALYTICS_COCO,
     "expert_eff": ANALYTICS_EXPERT_EFF,
     "analytics_32cls": ANALYTICS_EXPERT_EFF,

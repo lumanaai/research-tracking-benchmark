@@ -26,7 +26,7 @@ if [[ ! -x "$PYTHON" ]]; then
   exit 1
 fi
 
-BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow})
+BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
 TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack botsort})
 DETECTORS=(${DETECTORS:-gt yolov8})
 # "full" = every frame (no --fps). Numeric values subsample cached dets.

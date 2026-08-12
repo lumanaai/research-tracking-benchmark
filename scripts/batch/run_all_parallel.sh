@@ -27,7 +27,7 @@ if [[ ! -x "$PYTHON" ]]; then
   exit 1
 fi
 
-BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow})
+BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
 TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack botsort})
 DETECTOR="${DETECTOR:-yolov8}"
 GPUS=(${GPUS:-0 1 2 3})

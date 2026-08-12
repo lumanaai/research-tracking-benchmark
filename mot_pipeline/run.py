@@ -74,6 +74,7 @@ def _default_tracker_config(tracker: str, benchmark: str) -> Optional[Path]:
             "ua_detrac": cfg_dir / "detrac_no_roi.json",
             "trafficmot": cfg_dir / "general_no_roi.json",
             "cityflow": cfg_dir / "general_no_roi.json",
+            "lumana_benchmark": cfg_dir / "general_no_roi.json",
         }
         return by_bench.get(benchmark, cfg_dir / "general_no_roi.json")
     if tracker == "ocsort":
@@ -390,7 +391,13 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument(
             "--benchmark",
             required=True,
-            choices=["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow"],
+            choices=[
+                "fasttracker_bench",
+                "ua_detrac",
+                "trafficmot",
+                "cityflow",
+                "lumana_benchmark",
+            ],
         )
         sp.add_argument("--split", default=None, help="Benchmark split (default per adapter).")
         sp.add_argument("--sequences", nargs="+", default=None)

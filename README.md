@@ -14,6 +14,7 @@ For the longer operator notes, see [`AGENTS.md`](AGENTS.md).
 | `ua_detrac` | [UA-DETRAC](https://detrac-db.rit.albany.edu/) |
 | `trafficmot` | TrafficMOT |
 | `cityflow` | CityFlow / AIC22 (CityFlowV2) |
+| `lumana_benchmark` | LumanaBenchmark (internal vehicle GT) |
 
 Converters turn each dataset into a MOTChallenge-style layout under `mot/<Benchmark>/<split>/<seq>/`.
 

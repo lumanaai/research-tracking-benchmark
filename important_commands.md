@@ -40,6 +40,9 @@ Data / artifacts live on the SSD under `/media/7TBSSD/data/tracking/`.
 # Pass --extract once to unzip train/*.zip
 .venv/bin/python scripts/visualize/visualize_fasttracker.py /media/7TBSSD/data/tracking/FastTracker-Benchmark --extract
 # Useful: --sequences task_day_occlusion --show-ignore --max-sequences 3 --max-frames 300
+
+# LumanaBenchmark → LumanaBenchmark_visualizations/<seq>.mp4 (skips seqs without img1/)
+.venv/bin/python scripts/visualize/visualize_lumana.py /media/7TBSSD/data/tracking/LumanaBenchmark
 ```
 
 ---
@@ -54,6 +57,7 @@ Idempotent. Pass `--sequences` to limit work (especially important for CityFlow 
 .venv/bin/python -m mot_pipeline.run convert --benchmark trafficmot          # default split: Fully_annotate
 .venv/bin/python -m mot_pipeline.run convert --benchmark cityflow --sequences S01_c001
 .venv/bin/python -m mot_pipeline.run convert --benchmark cityflow --force    # full train extract
+.venv/bin/python -m mot_pipeline.run convert --benchmark lumana_benchmark    # symlink GT annotations
 ```
 
 ---
@@ -67,6 +71,7 @@ Idempotent. Pass `--sequences` to limit work (especially important for CityFlow 
 .venv/bin/python -m mot_pipeline.run detect --benchmark ua_detrac --detector gt
 .venv/bin/python -m mot_pipeline.run detect --benchmark trafficmot --detector gt
 .venv/bin/python -m mot_pipeline.run detect --benchmark cityflow --detector gt --sequences S01_c001
+.venv/bin/python -m mot_pipeline.run detect --benchmark lumana_benchmark --detector gt
 ```
 
 ### Reuse existing sequence-local dets (`<seq>/det/det.txt`)
@@ -188,6 +193,7 @@ there changes what runs here. Works on every benchmark; CPU-only.
 .venv/bin/python -m mot_pipeline.run all --benchmark ua_detrac  --tracker analytics_bytetrack --detector gt
 .venv/bin/python -m mot_pipeline.run all --benchmark trafficmot --tracker analytics_bytetrack --detector gt
 .venv/bin/python -m mot_pipeline.run all --benchmark cityflow   --tracker analytics_bytetrack --detector gt
+.venv/bin/python -m mot_pipeline.run all --benchmark lumana_benchmark --tracker analytics_bytetrack --detector gt
 ```
 
 ### UA-DETRAC
@@ -398,7 +404,7 @@ DETECTOR=yolov8 GPUS="0 1 2 3 4 5 6 7" SHARD_SEQS=1 TRACK_JOBS=12 ./scripts/batc
 
 | Goal | Command sketch |
 |------|----------------|
-| GT video | `scripts/visualize/visualize_{ua_detrac,trafficmot,cityflow,fasttracker}.py` |
+| GT video | `scripts/visualize/visualize_{ua_detrac,trafficmot,cityflow,fasttracker,lumana}.py` |
 | Ensure MOT layout | `-m mot_pipeline.run convert --benchmark …` |
 | Use existing dets | `--detector existing` |
 | Run YOLO | `--detector yolov8 --device cuda:0` |

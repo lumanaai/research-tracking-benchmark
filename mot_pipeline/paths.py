@@ -19,6 +19,7 @@ RAW_DATASETS = {
     "ua_detrac": SSD_ROOT / "UA-DETRAC",
     "trafficmot": SSD_ROOT / "TrafficMOT",
     "cityflow": SSD_ROOT / "CityFlow",
+    "lumana_benchmark": SSD_ROOT / "LumanaBenchmark",
 }
 
 TRACKEREVAL_ROOT = PROJECT_ROOT / "FastTracker" / "TrackEval"

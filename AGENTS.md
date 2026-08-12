@@ -4,7 +4,7 @@ Guidance for agents working in this vehicle-tracking project.
 
 ## Goal
 
-Build and evaluate vehicle / traffic multi-object tracking benchmarks (UA-DETRAC, TrafficMOT, CityFlow, FastTracker-Benchmark, …). Prefer reusable scripts and clear data paths over one-off notebooks.
+Build and evaluate vehicle / traffic multi-object tracking benchmarks (UA-DETRAC, TrafficMOT, CityFlow, FastTracker-Benchmark, LumanaBenchmark, …). Prefer reusable scripts and clear data paths over one-off notebooks.
 
 ## Layout
 
@@ -20,6 +20,8 @@ Build and evaluate vehicle / traffic multi-object tracking benchmarks (UA-DETRAC
 | `/media/7TBSSD/data/tracking/CityFlow_visualizations/` | Rendered CityFlow GT videos (sibling of the dataset). |
 | `/media/7TBSSD/data/tracking/FastTracker-Benchmark/` | FastTracker-Benchmark (HF) dataset root. |
 | `/media/7TBSSD/data/tracking/FastTracker-Benchmark_visualizations/` | Rendered FastTracker GT videos (sibling of the dataset). |
+| `/media/7TBSSD/data/tracking/LumanaBenchmark/` | LumanaBenchmark (internal vehicle GT) dataset root. |
+| `/media/7TBSSD/data/tracking/LumanaBenchmark_visualizations/` | Rendered LumanaBenchmark GT videos (sibling of the dataset). |
 | `/media/7TBSSD/data/tracking/venvs/tracking/` | Real Python virtualenv (fast drive). |
 | `/media/7TBSSD/data/tracking/mot/` | Normalized MOTChallenge roots (converters / symlinks). |
 | `/media/7TBSSD/data/tracking/detections/` | Shared detector cache (`<bench>/<split>/<detector_id>/<seq>/det.txt`). |
@@ -142,6 +144,37 @@ Download:
 ```
 
 Default output: `/media/7TBSSD/data/tracking/FastTracker-Benchmark_visualizations/<seq>.mp4`. Useful flags: `--sequences`, `--show-ignore`, `--max-sequences`, `--max-frames`.
+
+## LumanaBenchmark
+
+Dataset root: `/media/7TBSSD/data/tracking/LumanaBenchmark`
+
+Manually validated vehicle MOT GT (labels only until videos are uploaded). See local `GT_TRACKING_ANNOTATIONS_FOR_AGENTS.md`.
+
+Structure:
+
+- `gt_annotations_manually_validated/<seq>/seqinfo.ini` — frameRate (varies ~13–30), seqLength, imWidth/imHeight
+- `gt_annotations_manually_validated/<seq>/gt/gt.txt` — MOT-style 8 cols: `frame,id,x,y,w,h,conf,class` (class always `1` = vehicle; spaces after commas are OK)
+- `gt_annotations_manually_validated/seqmaps/{vehicle-all,VEHICLE-train}.txt` — 24 sequence names
+- `img1/` frames are optional for now; GT-oracle track/eval does not need them
+
+Pipeline: `mot/LumanaBenchmark/train` is a symlink to `gt_annotations_manually_validated/` (CLI id `lumana_benchmark`, default split `train`). FastTracker default config: `general_no_roi.json`.
+
+```bash
+.venv/bin/python -m mot_pipeline.run convert --benchmark lumana_benchmark
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark lumana_benchmark --tracker ocsort --detector gt
+```
+
+### Visualization
+
+`scripts/visualize/visualize_lumana.py` overlays GT boxes/IDs/trails when `img1/` frames exist; sequences without frames are skipped.
+
+```bash
+.venv/bin/python scripts/visualize/visualize_lumana.py /media/7TBSSD/data/tracking/LumanaBenchmark
+```
+
+Default output: `/media/7TBSSD/data/tracking/LumanaBenchmark_visualizations/<seq>.mp4`.
 
 ## FastTracker (tracker)
 
@@ -313,20 +346,20 @@ Default keep-sets drop person / bicycle / ignore regions and **include** motorcy
 .venv/bin/python -m mot_pipeline.run eval --run-id <run_id>
 ```
 
-Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`.  
+Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`, `lumana_benchmark`.  
 Detectors: `gt`, `yolov8`, `existing` (reuse each sequence's `det/det.txt`), `yolox` (stub).  
 Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
 
 Default FastTracker configs (override with `--tracker-config`):
 - `fasttracker_bench` → `configs/trackers/fasttracker/fasttracker_bench.json`
 - `ua_detrac` → `detrac_no_roi.json`
-- `trafficmot` / `cityflow` → `general_no_roi.json`
+- `trafficmot` / `cityflow` / `lumana_benchmark` → `general_no_roi.json`
 
 OC-SORT / HybridSORT / BoT-SORT defaults: `configs/trackers/ocsort/default.json`, `configs/trackers/hybridsort/default.json`, and `configs/trackers/botsort/default.json` (all benchmarks).
 
 Analytics ByteTrack (live import from `analytics/analyzer_manager/app/tracking/`): default `configs/trackers/analytics_bytetrack/benchmark.json`; as-deployed settings in `production.json`. Shim lives in `mot_pipeline/trackers/analytics_shim.py` — no changes to the analytics clone.
 
-Other benchmark defaults: UA-DETRAC / CityFlow → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
+Other benchmark defaults: UA-DETRAC / CityFlow / LumanaBenchmark → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
 
 ### OC-SORT / HybridSORT / BoT-SORT (motion-only)
 
@@ -356,7 +389,7 @@ Clones live at project root: `OC_SORT/`, `HybridSORT/`, `BoT-SORT/`. Same CLI as
 
 Hybrid-SORT-ReID, ByteSReid, BoT-SORT-ReID, and TrafficTrack are deferred — see [`TODOs.md`](TODOs.md).
 
-### FastTracker on all four benchmarks
+### FastTracker on all five benchmarks
 
 ```bash
 # 1) FastTracker-Benchmark — reuse the YOLO dets already under train/<seq>/det/det.txt
@@ -387,6 +420,10 @@ Hybrid-SORT-ReID, ByteSReid, BoT-SORT-ReID, and TrafficTrack are deferred — se
   --benchmark cityflow --tracker fasttracker --detector existing --sequences S01_c001
 .venv/bin/python -m mot_pipeline.run all \
   --benchmark cityflow --tracker fasttracker --detector yolov8 --device cuda:0 --sequences S01_c001
+
+# 5) LumanaBenchmark (GT-only until videos land; no img1 required for oracle track/eval)
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark lumana_benchmark --tracker fasttracker --detector gt
 ```
 
 `--detector existing` copies/filters sequence-local dets into `detections/.../existing_det_vehicles/` (use `--det-name det/det_yolo3.txt` for a CityFlow baseline file by name). `--detector yolov8` always writes a fresh cache under `detections/.../yolov8s_.../` and skips frames that are already cached unless `--force-detect`.

@@ -36,7 +36,7 @@ METRIC_COLS = [
 # Within a benchmark, bold the best value per metric (↑ higher better, ↓ lower better).
 HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "MT"}
 LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
-BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow"]
+BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow", "lumana_benchmark"]
 TRACKER_ORDER = [
     "fasttracker",
     "ocsort",
@@ -51,6 +51,7 @@ NATIVE_FPS = {
     "ua_detrac": 25.0,
     "trafficmot": 10.0,
     "cityflow": 10.0,
+    "lumana_benchmark": 20.0,  # per-seq varies ~13–30; display uses rounded mean
 }
 
 
