@@ -125,7 +125,7 @@ Standalone (legacy, writes into each sequence’s `det/det.txt`):
 
 `all` = detect (cached) → track → TrackEval → update findings index.
 
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `botsort` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `botsort` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
 
 Default configs:
 - FastTracker: per-benchmark (`fasttracker_bench.json`, `detrac_no_roi.json`, `general_no_roi.json`)
@@ -133,6 +133,7 @@ Default configs:
 - HybridSORT: `mot_pipeline/configs/trackers/hybridsort/default.json`
 - BoT-SORT: `mot_pipeline/configs/trackers/botsort/default.json` (ReID off; CMC `none` by default)
 - Analytics ByteTrack: `mot_pipeline/configs/trackers/analytics_bytetrack/benchmark.json` (pass `production.json` for the as-deployed settings)
+- Analytics ByteTrack Plus: `mot_pipeline/configs/trackers/analytics_bytetrack_plus/benchmark.json`
 
 ### FastTracker-Benchmark
 
@@ -194,6 +195,21 @@ there changes what runs here. Works on every benchmark; CPU-only.
 .venv/bin/python -m mot_pipeline.run all --benchmark trafficmot --tracker analytics_bytetrack --detector gt
 .venv/bin/python -m mot_pipeline.run all --benchmark cityflow   --tracker analytics_bytetrack --detector gt
 .venv/bin/python -m mot_pipeline.run all --benchmark lumana_benchmark --tracker analytics_bytetrack --detector gt
+```
+
+### Analytics ByteTrack Plus
+
+Same analytics wrapper path; engine is `ByteTrackerPlus/byte_tracker_plus.py`
+(crossover protection, parked-vehicle hold). Default:
+`mot_pipeline/configs/trackers/analytics_bytetrack_plus/benchmark.json`.
+
+```bash
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker analytics_bytetrack_plus --detector existing \
+  --sequences task_day_occlusion
+
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark lumana_benchmark --tracker analytics_bytetrack_plus --detector gt
 ```
 
 ### UA-DETRAC
@@ -409,7 +425,7 @@ DETECTOR=yolov8 GPUS="0 1 2 3 4 5 6 7" SHARD_SEQS=1 TRACK_JOBS=12 ./scripts/batc
 | Use existing dets | `--detector existing` |
 | Run YOLO | `--detector yolov8 --device cuda:0` |
 | Oracle association | `--detector gt` |
-| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack,botsort} --detector …` |
+| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack,analytics_bytetrack_plus,botsort} --detector …` |
 | Parallel YOLO sweep | `./scripts/batch/run_all_parallel.sh` |
 | Re-eval | `-m mot_pipeline.run eval --run-id …` |
 | Overlay tracks | `scripts/visualize/visualize_mot_results.py --frames … --results … --out …` |

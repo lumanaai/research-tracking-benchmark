@@ -27,6 +27,7 @@ Converters turn each dataset into a MOTChallenge-style layout under `mot/<Benchm
 | `hybridsort` | Vendored [HybridSORT](https://github.com/ymzisalok/HybridSORT) (motion-only path) |
 | `botsort` | Vendored [BoT-SORT](https://github.com/NirAharon/BoT-SORT) (motion-only; ReID off) |
 | `analytics_bytetrack` | In-house ByteTrack via the vendored `analytics/` tree |
+| `analytics_bytetrack_plus` | Same as above with crossover / parked-vehicle engine (`ByteTrackerPlus/`) |
 | `traffictrack` | Stub only (see [`TODOs.md`](TODOs.md)) |
 
 Upstream clones are committed as plain directories (not git submodules). BoT-SORT appearance ReID is deferred (`TODOs.md`); CMC defaults to `none` (enable `sparseOptFlow` via tracker JSON if needed).
@@ -52,6 +53,7 @@ OC_SORT/
 HybridSORT/
 BoT-SORT/              # motion-only via botsort adapter (FastReID stubbed)
 analytics/             # in-house analytics (ByteTrack source used by the shim)
+ByteTrackerPlus/       # modified analytics ByteTrack engine (analytics_bytetrack_plus)
 results/comparisons/   # published comparison tables
 ```
 

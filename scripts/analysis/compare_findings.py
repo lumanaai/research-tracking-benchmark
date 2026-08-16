@@ -28,13 +28,14 @@ METRIC_COLS = [
     "AssA",
     "MOTA",
     "IDF1",
+    "IDCons",
     "IDSW",
     "Frag",
     "MT",
     "ML",
 ]
 # Within a benchmark, bold the best value per metric (↑ higher better, ↓ lower better).
-HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "MT"}
+HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "MT"}
 LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
 BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow", "lumana_benchmark"]
 TRACKER_ORDER = [
@@ -42,6 +43,7 @@ TRACKER_ORDER = [
     "ocsort",
     "hybridsort",
     "analytics_bytetrack",
+    "analytics_bytetrack_plus",
     "botsort",
     "traffictrack",
 ]
@@ -159,7 +161,7 @@ def _fmt(col: str, val: str) -> str:
         x = float(val)
     except ValueError:
         return val
-    if col in ("HOTA", "DetA", "AssA", "MOTA", "IDF1", "LocA", "MOTP", "IDP", "IDR"):
+    if col in ("HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "LocA", "MOTP", "IDP", "IDR"):
         return f"{x:.3f}"
     if col in ("IDSW", "Frag", "MT", "ML", "FP", "FN", "sequence_count"):
         return f"{x:.0f}"

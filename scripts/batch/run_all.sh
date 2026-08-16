@@ -27,7 +27,7 @@ if [[ ! -x "$PYTHON" ]]; then
 fi
 
 BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
-TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack botsort})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus botsort})
 DETECTORS=(${DETECTORS:-gt yolov8})
 # "full" = every frame (no --fps). Numeric values subsample cached dets.
 FPS_VALUES=(${FPS_VALUES:-5 10 full})

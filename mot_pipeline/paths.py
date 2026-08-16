@@ -35,5 +35,7 @@ ANALYTICS_CLASSES_CSV = (
     ANALYTICS_ROOT / "analyzer_manager" / "assets" / "detection" / "32cls.csv"
 )
 ANALYTICS_TRACK_CONFIG = ANALYTICS_ROOT / "analyzer_manager" / "assets" / "configAnalytic.json"
+# Modified analytics ByteTrack engine (crossover / parked-vehicle protections).
+BYTETRACKER_PLUS_ROOT = PROJECT_ROOT / "ByteTrackerPlus"
 
 DEFAULT_YOLO_WEIGHTS = WEIGHTS_ROOT / "yolov8m-expert_eff-1_2.pt"

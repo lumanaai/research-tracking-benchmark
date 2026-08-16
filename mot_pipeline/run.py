@@ -29,6 +29,7 @@ from mot_pipeline.paths import (
 from mot_pipeline.protocols import RunSpec
 from mot_pipeline.registry import get_benchmark, get_detector, get_tracker
 from mot_pipeline.trackers.analytics_bytetrack import DEFAULT_CFG as AB_DEFAULTS
+from mot_pipeline.trackers.analytics_bytetrack_plus import DEFAULT_CFG as ABP_DEFAULTS
 from mot_pipeline.trackers.base import load_tracker_config
 from mot_pipeline.trackers.botsort import DEFAULT_CFG as BS_DEFAULTS
 from mot_pipeline.trackers.fasttracker import DEFAULT_CFG as FT_DEFAULTS
@@ -83,6 +84,8 @@ def _default_tracker_config(tracker: str, benchmark: str) -> Optional[Path]:
         return cfg_root / "hybridsort" / "default.json"
     if tracker == "analytics_bytetrack":
         return cfg_root / "analytics_bytetrack" / "benchmark.json"
+    if tracker == "analytics_bytetrack_plus":
+        return cfg_root / "analytics_bytetrack_plus" / "benchmark.json"
     if tracker == "botsort":
         return cfg_root / "botsort" / "default.json"
     return None
@@ -97,6 +100,8 @@ def _tracker_defaults(tracker: str) -> dict:
         return dict(HS_DEFAULTS)
     if tracker == "analytics_bytetrack":
         return dict(AB_DEFAULTS)
+    if tracker == "analytics_bytetrack_plus":
+        return dict(ABP_DEFAULTS)
     if tracker == "botsort":
         return dict(BS_DEFAULTS)
     return {}
@@ -346,7 +351,7 @@ def cmd_eval(args: argparse.Namespace, exp_dir: Optional[Path] = None) -> Path:
     })
 
     out = exp_dir / "eval"
-    print("Running TrackEval (HOTA / CLEAR / Identity) ...")
+    print("Running TrackEval (HOTA / CLEAR / Identity / IDCons) ...")
     summary = run_trackeval(
         gt_folder=prepared["gt_folder"],
         trackers_folder=prepared["trackers_folder"],
@@ -365,6 +370,7 @@ def cmd_eval(args: argparse.Namespace, exp_dir: Optional[Path] = None) -> Path:
         f" HOTA={comb.get('HOTA', float('nan')):.3f}"
         f" MOTA={comb.get('MOTA', float('nan')):.3f}"
         f" IDF1={comb.get('IDF1', float('nan')):.3f}"
+        f" IDCons={comb.get('IDCons', float('nan')):.3f}"
     )
     print(f"Wrote {out / 'summary.csv'} and {out / 'summary.json'}")
     print(f"Updated findings index: {findings_dir / 'findings.csv'}")
@@ -416,6 +422,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "ocsort",
                     "hybridsort",
                     "analytics_bytetrack",
+                    "analytics_bytetrack_plus",
                     "botsort",
                 ],
             )

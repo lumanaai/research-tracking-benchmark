@@ -17,6 +17,7 @@
 | HybridSORT | `hybridsort.py` | `configs/trackers/hybridsort/default.json` |
 | BoT-SORT (no ReID) | `botsort.py` + `botsort_shim.py` | `configs/trackers/botsort/default.json` |
 | Analytics ByteTrack | `analytics_bytetrack.py` + `analytics_shim.py` | `configs/trackers/analytics_bytetrack/benchmark.json` |
+| Analytics ByteTrack Plus | `analytics_bytetrack_plus.py` + `ByteTrackerPlus/` | `configs/trackers/analytics_bytetrack_plus/benchmark.json` |
 
 ## Contract reminders
 

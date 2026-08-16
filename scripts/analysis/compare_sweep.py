@@ -28,8 +28,8 @@ if str(_ROOT) not in sys.path:
 
 from mot_pipeline.paths import FINDINGS_ROOT
 
-METRIC_COLS = ["HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDSW", "Frag", "MT", "ML"]
-HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "MT"}
+METRIC_COLS = ["HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "IDSW", "Frag", "MT", "ML"]
+HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "MT"}
 LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
 BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow", "lumana_benchmark"]
 DEFAULT_DETECTOR = "yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles"
@@ -103,7 +103,7 @@ def _varied_keys(configs: List[Dict[str, Any]]) -> List[str]:
 def _fmt(key: str, value: object) -> str:
     if value is None or value == "":
         return "—"
-    if key in ("HOTA", "DetA", "AssA", "MOTA", "IDF1"):
+    if key in ("HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons"):
         try:
             return f"{float(value):.4f}"
         except (TypeError, ValueError):

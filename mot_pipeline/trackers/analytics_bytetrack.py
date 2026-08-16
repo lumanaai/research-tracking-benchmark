@@ -134,9 +134,7 @@ class AnalyticsByteTrackAdapter(Tracker):
 
         class_handler = MiniClassHandler()
         context = TrackerContext((img_h, img_w), class_handler)
-        tracker = tracker_factory().create(
-            str(cfg.get("name", "bytetrack")), cfg, frame_rate, context
-        )
+        tracker = self._create_tracker(tracker_factory, cfg, frame_rate, context)
         if cfg.get("night_mode"):
             # Same event the analyzer fires when a frame comes back monochrome.
             context.set_night_mode(True)
@@ -168,6 +166,11 @@ class AnalyticsByteTrackAdapter(Tracker):
             results.append(self._to_frame_result(frame_id, tracked, min_box_area))
 
         write_mot_tracks(out_path, results)
+
+    def _create_tracker(self, tracker_factory, cfg, frame_rate, context):
+        return tracker_factory().create(
+            str(cfg.get("name", "bytetrack")), cfg, frame_rate, context
+        )
 
     @staticmethod
     def _build_predictions(

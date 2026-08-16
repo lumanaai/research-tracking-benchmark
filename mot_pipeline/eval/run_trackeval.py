@@ -1,4 +1,4 @@
-"""Run bundled TrackEval (HOTA / CLEAR / Identity) on a prepared layout."""
+"""Run bundled TrackEval (HOTA / CLEAR / Identity / IDCons) on a prepared layout."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def run_trackeval(
     _patch_numpy_aliases()
     import trackeval  # noqa: WPS433
 
-    metrics = metrics or ["HOTA", "CLEAR", "Identity"]
+    metrics = metrics or ["HOTA", "CLEAR", "Identity", "IDCons"]
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
 
@@ -92,6 +92,7 @@ def run_trackeval(
         trackeval.metrics.HOTA,
         trackeval.metrics.CLEAR,
         trackeval.metrics.Identity,
+        trackeval.metrics.IDCons,
         trackeval.metrics.VACE,
     ):
         if metric_cls.get_name() in metrics_config["METRICS"]:
@@ -124,6 +125,7 @@ _HEADLINE = {
     "IDF1",
     "IDP",
     "IDR",
+    "IDCons",
     "IDSW",
     "Frag",
     "MT",
@@ -132,6 +134,12 @@ _HEADLINE = {
     "FN",
     "Recall",
     "Precision",
+}
+
+# Accumulator-only fields used to combine sequences; omit from summary/findings.
+_SKIP_FIELDS = {
+    "IDCons_sum",
+    "IDCons_num_ids",
 }
 
 
@@ -166,6 +174,8 @@ def _flatten_results(output_res: dict, tracker_name: str) -> Dict[str, Any]:
             if not isinstance(fields, dict):
                 continue
             for k, v in fields.items():
+                if k in _SKIP_FIELDS:
+                    continue
                 num = _coerce_metric_value(metric_name, k, v)
                 if num is None:
                     continue
@@ -201,6 +211,7 @@ def _write_summary_csv(path: Path, summary: Dict[str, Any]) -> None:
         "IDF1",
         "IDP",
         "IDR",
+        "IDCons",
         "IDSW",
         "Frag",
         "MT",

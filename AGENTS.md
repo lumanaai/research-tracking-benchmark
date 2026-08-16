@@ -294,7 +294,7 @@ Importing/running the tracker needs: `torch` + `torchvision` (CPU wheels are eno
 
 ### Evaluation
 
-Prefer the unified pipeline below (`mot_pipeline`). The bundled TrackEval under `FastTracker/TrackEval/` is still what computes HOTA / CLEAR / Identity; `motmetrics` remains available for the upstream YOLOX path.
+Prefer the unified pipeline below (`mot_pipeline`). The bundled TrackEval under `FastTracker/TrackEval/` is still what computes HOTA / CLEAR / Identity / IDCons; `motmetrics` remains available for the upstream YOLOX path.
 
 ## MOT pipeline (`mot_pipeline/`)
 
@@ -348,7 +348,7 @@ Default keep-sets drop person / bicycle / ignore regions and **include** motorcy
 
 Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`, `lumana_benchmark`.  
 Detectors: `gt`, `yolov8`, `existing` (reuse each sequence's `det/det.txt`), `yolox` (stub).  
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
 
 Default FastTracker configs (override with `--tracker-config`):
 - `fasttracker_bench` → `configs/trackers/fasttracker/fasttracker_bench.json`
@@ -358,6 +358,8 @@ Default FastTracker configs (override with `--tracker-config`):
 OC-SORT / HybridSORT / BoT-SORT defaults: `configs/trackers/ocsort/default.json`, `configs/trackers/hybridsort/default.json`, and `configs/trackers/botsort/default.json` (all benchmarks).
 
 Analytics ByteTrack (live import from `analytics/analyzer_manager/app/tracking/`): default `configs/trackers/analytics_bytetrack/benchmark.json`; as-deployed settings in `production.json`. Shim lives in `mot_pipeline/trackers/analytics_shim.py` — no changes to the analytics clone.
+
+Analytics ByteTrack Plus (same wrapper + `ByteTrackerPlus/` engine with crossover / parked-vehicle logic): default `configs/trackers/analytics_bytetrack_plus/benchmark.json`.
 
 Other benchmark defaults: UA-DETRAC / CityFlow / LumanaBenchmark → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
 
@@ -384,6 +386,16 @@ Clones live at project root: `OC_SORT/`, `HybridSORT/`, `BoT-SORT/`. Same CLI as
 ```bash
 .venv/bin/python -m mot_pipeline.run all \
   --benchmark fasttracker_bench --tracker analytics_bytetrack --detector existing \
+  --sequences task_day_occlusion
+```
+
+### Analytics ByteTrack Plus
+
+Same analytics wrapper; association engine is `ByteTrackerPlus/` (crossover / parked-vehicle protections).
+
+```bash
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker analytics_bytetrack_plus --detector existing \
   --sequences task_day_occlusion
 ```
 
@@ -439,7 +451,7 @@ Hybrid-SORT-ReID, ByteSReid, BoT-SORT-ReID, and TrafficTrack are deferred — se
 
 ### Metrics
 
-TrackEval writes `experiments/<run_id>/eval/summary.csv` + `summary.json` with per-sequence and `COMBINED` **HOTA** (DetA/AssA), **CLEAR** (MOTA/MOTP/IDSW/Frag/MT/ML/FP/FN), **Identity** (IDF1/IDP/IDR).
+TrackEval writes `experiments/<run_id>/eval/summary.csv` + `summary.json` with per-sequence and `COMBINED` **HOTA** (DetA/AssA), **CLEAR** (MOTA/MOTP/IDSW/Frag/MT/ML/FP/FN), **Identity** (IDF1/IDP/IDR), **IDCons** (mean per-GT tracker-ID purity).
 Cross-run indexes live at `experiments/_findings/<benchmark>/<tracker>/<detector_id>/findings.csv` (spreadsheet-friendly) and `findings.json` (full structured records).
 
 ## Conventions

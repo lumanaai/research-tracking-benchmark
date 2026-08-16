@@ -37,6 +37,7 @@ PREFERRED_COLUMNS = [
     "IDF1",
     "IDP",
     "IDR",
+    "IDCons",
     "IDSW",
     "Frag",
     "MT",

@@ -3,7 +3,7 @@ name: compare-mot-findings
 description: >-
   Build MOT tracker comparison tables from experiments/_findings via
   compare_findings.py. Use when comparing trackers, runs, detectors, or FPS
-  settings; regenerating results/comparisons tables; or summarizing HOTA/MOTA/IDF1.
+  settings; regenerating results/comparisons tables; or summarizing HOTA/MOTA/IDF1/IDCons.
 ---
 
 # Compare MOT findings
@@ -75,5 +75,5 @@ More detector aliases and interpretation notes: [reference.md](reference.md).
 
 - **GT (`gt_vehicles`)**: association-only (perfect boxes). High DetA expected; gaps are IDSW/Frag/AssA.
 - **YOLO / existing**: joint detector+tracker score; DetA is capped by the detector.
-- Bold cells = best within that benchmark block (↑ HOTA/DetA/AssA/MOTA/IDF1/MT; ↓ IDSW/Frag/ML).
+- Bold cells = best within that benchmark block (↑ HOTA/DetA/AssA/MOTA/IDF1/IDCons/MT; ↓ IDSW/Frag/ML).
 - Prefer HOTA + AssA + IDF1 for tracker ranking; MOTA alone can mislead under detector FP/FN.
