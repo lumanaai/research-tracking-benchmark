@@ -31,6 +31,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--fps", type=float, default=25.0)
     p.add_argument("--trail-length", type=int, default=60)
     p.add_argument("--max-frames", type=int, default=None)
+    p.add_argument(
+        "--frame-stride",
+        type=int,
+        default=1,
+        help="Keep every Nth image (1-indexed MOT frames). Use with --fps to match subsampled tracking.",
+    )
     p.add_argument("--label", type=str, default="", help="Optional HUD prefix.")
     return p.parse_args()
 
@@ -66,6 +72,12 @@ def main() -> None:
         frames = sorted(args.frames.glob("*.png"), key=frame_index)
     if not frames:
         raise SystemExit(f"No frames in {args.frames}")
+
+    stride = max(1, int(args.frame_stride))
+    if stride > 1:
+        frames = [fp for fp in frames if frame_index(fp) > 0 and (frame_index(fp) - 1) % stride == 0]
+        if not frames:
+            raise SystemExit(f"No frames left after --frame-stride {stride}")
 
     per_frame = load_mot(args.results)
     sample = cv2.imread(str(frames[0]))

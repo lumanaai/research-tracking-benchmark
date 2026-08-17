@@ -130,10 +130,14 @@ spawn_job() {
 list_seqs() {
   local bench="$1"
   "$PYTHON" - <<PY
+import sys
 from mot_pipeline.registry import get_benchmark
 b = get_benchmark("$bench")
 split = b.default_split()
+_stdout = sys.stdout
+sys.stdout = sys.stderr
 b.ensure_mot(split, force=False)
+sys.stdout = _stdout
 print("\n".join(p.name for p in b.sequence_dirs(split)))
 PY
 }

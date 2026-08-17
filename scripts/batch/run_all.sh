@@ -30,6 +30,8 @@ BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana
 TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus botsort})
 DETECTORS=(${DETECTORS:-gt yolov8})
 # "full" = every frame (no --fps). Numeric values subsample cached dets.
+# Eval matches tracking: when --fps is set, TrackEval GT is filtered to the
+# same kept frames (skipped frames do not exist). Full-rate eval is unchanged.
 FPS_VALUES=(${FPS_VALUES:-5 10 full})
 
 # Default: same checkpoint used to build the shared detections/ cache
@@ -127,10 +129,15 @@ spawn_job() {
 list_seqs() {
   local bench="$1"
   "$PYTHON" - <<PY
+import sys
 from mot_pipeline.registry import get_benchmark
 b = get_benchmark("$bench")
 split = b.default_split()
+# convert/ensure_mot may print progress; keep sequence names as the only stdout.
+_stdout = sys.stdout
+sys.stdout = sys.stderr
 b.ensure_mot(split, force=False)
+sys.stdout = _stdout
 print("\n".join(p.name for p in b.sequence_dirs(split)))
 PY
 }
@@ -157,6 +164,7 @@ compare_stem() {
   local det_id="$1"
   case "$det_id" in
     gt_vehicles) echo "gt_vehicles" ;;
+    yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles) echo "yolov8m_expert_eff" ;;
     yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles) echo "yolov8m_expert_eff" ;;
     *) echo "$det_id" ;;
   esac

@@ -27,6 +27,9 @@ PREFERRED_COLUMNS = [
     "target_fps",
     "sequence_count",
     "exclude_motorcycles",
+    "avg_ms_per_frame",
+    "track_total_seconds",
+    "track_total_frames",
     "experiment_dir",
     "HOTA",
     "DetA",
@@ -50,6 +53,17 @@ PREFERRED_COLUMNS = [
 def _safe_component(value: object) -> str:
     text = str(value).strip()
     return "".join(c if c.isalnum() or c in "._-" else "_" for c in text)
+
+
+def _load_timing(experiment_dir: Path) -> Dict[str, Any]:
+    path = Path(experiment_dir) / "timing.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _config_hash(config: object) -> str:
@@ -100,6 +114,7 @@ def record_findings(
 
     tracker_config = spec.get("tracker_config", {})
     extra = spec.get("extra") or {}
+    timing = _load_timing(experiment_dir)
     record: Dict[str, Any] = {
         "run_id": spec["run_id"],
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
@@ -116,6 +131,10 @@ def record_findings(
         "experiment_dir": str(experiment_dir.resolve()),
         **combined_metrics,
     }
+    if timing:
+        for key in ("avg_ms_per_frame", "track_total_seconds", "track_total_frames"):
+            if key in timing and timing[key] is not None:
+                record[key] = timing[key]
 
     by_run_id = {
         existing["run_id"]: existing

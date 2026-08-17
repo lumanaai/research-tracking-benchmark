@@ -1,0 +1,23 @@
+{
+  "name": "bytetrack_plus",
+  "track_thresh": 0.25,
+  "untrack_objects": [],
+  "first_track_compensation": 0.1,
+  "baseline_track_compensation": 0.05,
+  "use_per_class_thresh": true,
+  "detector_unique": false,
+  "n_init": 3,
+  "track_buffer_seconds": 3.0,
+  "match_thresh": 0.96,
+  "match_thresh_2": 0.84,
+  "match_thresh_3": 0.6,
+  "min_box_area": 10,
+  "mot20": false,
+  "use_timestamp": false,
+  "night_mode": false,
+  "velocity_window_size": 15,
+  "velocity_cost_alpha": 0.0,
+  "velocity_noise_th": 1.5,
+  "fast_exit_th": 4.0,
+  "parked_max_lost_multiplier": 10.0
+}

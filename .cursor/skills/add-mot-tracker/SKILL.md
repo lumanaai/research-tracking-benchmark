@@ -27,10 +27,12 @@ Copy and track progress:
 - [ ] 4. Register + run.py wiring
 - [ ] 5. Config JSON
 - [ ] 6. Batch TRACKERS defaults
-- [ ] 7. compare_findings TRACKER_ORDER
+- [ ] 7. compare_findings TRACKER_ORDER + tracker_meta.py (year, preferred_detector)
 - [ ] 8. Docs (README / AGENTS / important_commands; TODOs if deferred)
 - [ ] 9. Smoke run
 ```
+
+After registering a tracker, add a `TRACKER_META` entry in `mot_pipeline/tracker_meta.py` (release year + preferred detector). Re-run `scripts/analysis/bench_tracker_speed.py` so comparison tables get a `ms/frame` reference.
 
 ### 1. Clone + path
 

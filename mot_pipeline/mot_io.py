@@ -77,6 +77,7 @@ def filter_mot_lines(
     *,
     keep: Optional[Set[int]] = None,
     drop: Optional[Set[int]] = None,
+    keep_frames: Optional[Set[int]] = None,
     rewrite_class: Optional[int] = None,
     conf_default: float = 1.0,
     force_conf: Optional[float] = None,
@@ -85,6 +86,8 @@ def filter_mot_lines(
 
     Expected columns: frame,id,x,y,w,h,conf[,class[,visibility]]
     Rows without a class column are kept (and get ``rewrite_class`` if set).
+    ``keep_frames`` restricts to those 1-indexed MOT frame ids (skipped frames
+    are treated as nonexistent — used for subsampled ``--fps`` eval).
     """
     drop_set = drop or set()
     out: List[str] = []
@@ -94,6 +97,9 @@ def filter_mot_lines(
             continue
         parts = line.replace(",", " ").split()
         if len(parts) < 6:
+            continue
+        frame = int(float(parts[0]))
+        if keep_frames is not None and frame not in keep_frames:
             continue
         has_cls = len(parts) >= 8
         cls = int(float(parts[7])) if has_cls else None
@@ -109,7 +115,7 @@ def filter_mot_lines(
         out_cls = rewrite_class if rewrite_class is not None else (cls if cls is not None else 1)
         vis = parts[8] if len(parts) >= 9 else "1"
         out.append(
-            f"{int(float(parts[0]))},{int(float(parts[1]))},"
+            f"{frame},{int(float(parts[1]))},"
             f"{float(parts[2]):.2f},{float(parts[3]):.2f},"
             f"{float(parts[4]):.2f},{float(parts[5]):.2f},"
             f"{conf:.4f},{out_cls},{vis}"
@@ -123,6 +129,7 @@ def filter_mot_file(
     *,
     keep: Optional[Set[int]] = None,
     drop: Optional[Set[int]] = None,
+    keep_frames: Optional[Set[int]] = None,
     rewrite_class: Optional[int] = None,
     conf_default: float = 1.0,
     force_conf: Optional[float] = None,
@@ -132,6 +139,7 @@ def filter_mot_file(
             f,
             keep=keep,
             drop=drop,
+            keep_frames=keep_frames,
             rewrite_class=rewrite_class,
             conf_default=conf_default,
             force_conf=force_conf,

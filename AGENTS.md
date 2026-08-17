@@ -285,7 +285,8 @@ PYTHONPATH=. ../.venv/bin/python tools/track_from_dets.py \
 Notes / gotchas:
 - **GPU**: this box has 8× V100. The venv now has CUDA torch (`torch==2.5.1+cu121`, driver 535 → cu121 wheels) plus its `nvidia-*-cu12` runtime wheels. `pip install torch` alone won't pull the CUDA build if a CPU torch is "already satisfied" — force it: `pip install --index-url .../cu121 --force-reinstall torch torchvision` **with** the `nvidia-*-cu12` + `triton==3.1.0` deps (a `--no-deps` install misses `libcudart.so.12`).
 - Weights live on the SSD under `/media/7TBSSD/data/tracking/weights/` (keep them off the NAS). Default for the pipeline is `yolov8m-expert_eff-1_2.pt`.
-- The expert model uses a **non-COCO** class map for bus/truck (`bus=4`, `truck=6`, plus `forklift=19`). Stock COCO `yolov8s.pt` keep-set is different — see `mot_pipeline/class_maps.py`.
+- The expert model uses a **non-COCO** class map for bus/truck (`bus=4`, `truck=6`, plus `forklift=19` and `boat=23`). Default keep-set matches product: bicycle/car/motorcycle/bus/truck/forklift/boat. Stock COCO `yolov8s.pt` keep-set is different — see `mot_pipeline/class_maps.py`.
+- Pipeline YOLO defaults: `--imgsz 704x1280` (Ultralytics H×W) and `--conf 0.3`. Ultralytics NMS IoU is `0.7` unless overridden.
 - `det.txt` class column is the model class id (kept for class-aware tracking / eval mapping).
 
 ### Runtime deps (installed in the venv)
@@ -315,7 +316,7 @@ After every successful eval, the run is upserted into its combination-specific f
 
 ### Class policy (vehicles, motorcycles included)
 
-Default keep-sets drop person / bicycle / ignore regions and **include** motorcycles. Pass `--exclude-motorcycles` to drop moto ids too. Maps live in `mot_pipeline/class_maps.py`. Eval rewrites kept GT boxes to class `1` and scores TrackEval's `person` slot as a **class-agnostic vehicle** channel (the bundled TrackEval is patched for FastTracker-Benchmark class names).
+Default expert_eff keep-set drops person and **includes** motorcycles, bicycles, and boats (in-house product classes). Benchmark GT keep-sets still drop pedestrians / ignore regions. Pass `--exclude-motorcycles` to drop moto ids too. Maps live in `mot_pipeline/class_maps.py`. Eval rewrites kept GT boxes to class `1` and scores TrackEval's `person` slot as a **class-agnostic vehicle** channel (the bundled TrackEval is patched for FastTracker-Benchmark class names).
 
 ### CLI
 

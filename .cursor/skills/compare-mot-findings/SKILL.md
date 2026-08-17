@@ -29,8 +29,9 @@ Always **run** `scripts/analysis/compare_findings.py` (or `run_all_compare_findi
 |--------|--------|
 | GT oracle, full rate | `--detector-id gt_vehicles` |
 | GT @ 5 / 10 FPS | `--detector-id gt_vehicles --target-fps 5` (or `10`) |
-| Expert YOLO, full rate | `--detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles` |
-| Expert YOLO @ FPS | same detector-id + `--target-fps N` |
+| Expert YOLO, full rate (legacy square 1280 / conf 0.25) | `--detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles` |
+| Expert YOLO, product default (704×1280 / conf 0.3) | `--detector-id yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles` |
+| Expert YOLO @ FPS | matching detector-id + `--target-fps N` |
 | One benchmark | `--benchmark ua_detrac` |
 | One tracker | `--tracker botsort` |
 | Sweep timestamp / run family | `--run-id-substr 20260729_085336` |
@@ -57,8 +58,8 @@ Omit `--target-fps` for full-rate runs (table shows each bench’s native FPS).
   --out results/comparisons/gt_vehicles_fps5.md
 
 .venv/bin/python scripts/analysis/compare_findings.py \
-  --detector-id yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles --format both \
-  --out results/comparisons/yolov8m_expert_eff.md
+  --detector-id yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles --target-fps 5 --format both \
+  --out results/comparisons/yolov8m_expert_eff_fps5.md
 ```
 
 Naming: `<detector_stem>.md` for full rate; append `_fps5` / `_fps10` when `--target-fps` is set. Shorten long YOLO ids in the filename (e.g. `yolov8m_expert_eff`) but keep the **full** `--detector-id`.
@@ -73,7 +74,16 @@ More detector aliases and interpretation notes: [reference.md](reference.md).
 
 ## How to read the table
 
+- Tracker column shows `name (year)`; `pref_det` is the detector the paper/upstream designed for (usually YOLOX).
+- `ms/frame` is association-only compute time (detector excluded). Per-run when `timing.json` exists; else reference from `results/comparisons/tracker_speed.json` (dense GT on `task_day_occlusion`).
 - **GT (`gt_vehicles`)**: association-only (perfect boxes). High DetA expected; gaps are IDSW/Frag/AssA.
 - **YOLO / existing**: joint detector+tracker score; DetA is capped by the detector.
-- Bold cells = best within that benchmark block (↑ HOTA/DetA/AssA/MOTA/IDF1/IDCons/MT; ↓ IDSW/Frag/ML).
+- Bold cells = best within that benchmark block (↑ HOTA/DetA/AssA/MOTA/IDF1/IDCons/MT; ↓ IDSW/Frag/ML/ms/frame).
 - Prefer HOTA + AssA + IDF1 for tracker ranking; MOTA alone can mislead under detector FP/FN.
+- Each markdown table ends with a **Metric glossary** covering HOTA/DetA/AssA/MOTA/IDF1/IDCons/IDSW/Frag/MT/ML/FPS/ms/frame/pref_det.
+
+### Refresh speed refs
+
+```bash
+.venv/bin/python scripts/analysis/bench_tracker_speed.py
+```

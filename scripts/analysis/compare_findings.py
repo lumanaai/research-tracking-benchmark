@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -20,7 +21,14 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from mot_pipeline.paths import FINDINGS_ROOT
+from mot_pipeline.paths import FINDINGS_ROOT, PROJECT_ROOT
+from mot_pipeline.tracker_meta import (
+    display_tracker_name,
+    preferred_detector,
+    ref_ms_per_frame,
+    set_ref_ms_per_frame,
+    tracker_year,
+)
 
 METRIC_COLS = [
     "HOTA",
@@ -36,7 +44,7 @@ METRIC_COLS = [
 ]
 # Within a benchmark, bold the best value per metric (↑ higher better, ↓ lower better).
 HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "MT"}
-LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
+LOWER_IS_BETTER = {"IDSW", "Frag", "ML", "ms/frame"}
 BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow", "lumana_benchmark"]
 TRACKER_ORDER = [
     "fasttracker",
@@ -55,6 +63,101 @@ NATIVE_FPS = {
     "cityflow": 10.0,
     "lumana_benchmark": 20.0,  # per-seq varies ~13–30; display uses rounded mean
 }
+
+METRIC_GLOSSARY = [
+    (
+        "HOTA",
+        "Higher Order Tracking Accuracy — geometric mean of detection (DetA) and "
+        "association (AssA) accuracy over IoU thresholds; primary overall ranking metric.",
+    ),
+    (
+        "DetA",
+        "Detection Accuracy — how well predicted boxes cover GT detections "
+        "(localization + presence), independent of ID quality.",
+    ),
+    (
+        "AssA",
+        "Association Accuracy — how consistently the same tracker ID stays on the "
+        "same GT identity over time (identity preservation).",
+    ),
+    (
+        "MOTA",
+        "Multiple Object Tracking Accuracy — CLEAR metric: "
+        "1 − (FN + FP + IDSW) / GT_dets. Sensitive to detector FP/FN; can go negative.",
+    ),
+    (
+        "IDF1",
+        "ID F1 — harmonic mean of ID precision/recall from bipartite ID matching "
+        "(Identity metrics). Strong signal for ID stability.",
+    ),
+    (
+        "IDCons",
+        "ID Consistency — mean per-GT purity of the tracker IDs assigned to that object "
+        "(how little a single GT is fragmented across tracker IDs).",
+    ),
+    (
+        "IDSW",
+        "ID Switches — times a GT trajectory changes which tracker ID it is matched to "
+        "(↓ better).",
+    ),
+    (
+        "Frag",
+        "Fragmentations — times a tracked GT goes from matched → unmatched → matched "
+        "again (trajectory breaks; ↓ better).",
+    ),
+    (
+        "MT",
+        "Mostly Tracked — GT trajectories covered for ≥80% of their lifetime (↑ better).",
+    ),
+    (
+        "ML",
+        "Mostly Lost — GT trajectories covered for ≤20% of their lifetime (↓ better).",
+    ),
+    (
+        "FPS",
+        "Effective video frame rate fed to the tracker (target --fps, else native "
+        "benchmark rate). Not compute throughput.",
+    ),
+    (
+        "ms/frame",
+        "Average tracker compute time per processed frame (association only; excludes "
+        "detector). Per-run when timing.json exists; otherwise a reference timing on "
+        "dense GT dets (task_day_occlusion).",
+    ),
+    (
+        "pref_det",
+        "Detector the method prefers upstream / in production (YOLOX for most SORT-family "
+        "papers; YOLO for in-house ByteTrack variants). This pipeline often sweeps "
+        "YOLOv8m-expert or GT boxes instead.",
+    ),
+]
+
+
+def _load_speed_refs() -> None:
+    """Load optional reference timings from results/comparisons/tracker_speed.json."""
+    path = PROJECT_ROOT / "results" / "comparisons" / "tracker_speed.json"
+    if not path.is_file():
+        return
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    rows = data.get("results") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        return
+    vals = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = row.get("tracker")
+        ms = row.get("avg_ms_per_frame")
+        if name and ms is not None:
+            try:
+                vals[str(name)] = float(ms)
+            except (TypeError, ValueError):
+                continue
+    if vals:
+        set_ref_ms_per_frame(vals)
 
 
 def _normalize_fps(val: object) -> Optional[float]:
@@ -167,6 +270,8 @@ def _fmt(col: str, val: str) -> str:
         return f"{x:.0f}"
     if col in ("target_fps", "FPS"):
         return f"{x:g}"
+    if col in ("ms/frame", "avg_ms_per_frame"):
+        return f"{x:.2f}"
     return f"{x}"
 
 
@@ -179,6 +284,37 @@ def _display_fps(r: Dict[str, str]) -> str:
     if native is None:
         return "—"
     return f"{native:g}"
+
+
+def _timing_from_experiment(r: Dict[str, str]) -> Optional[float]:
+    exp = (r.get("experiment_dir") or "").strip()
+    if not exp:
+        return None
+    path = Path(exp) / "timing.json"
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    val = data.get("avg_ms_per_frame") if isinstance(data, dict) else None
+    try:
+        return float(val) if val is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _ms_per_frame(r: Dict[str, str]) -> Optional[float]:
+    raw = r.get("avg_ms_per_frame")
+    if raw not in ("", None):
+        try:
+            return float(raw)
+        except ValueError:
+            pass
+    from_exp = _timing_from_experiment(r)
+    if from_exp is not None:
+        return from_exp
+    return ref_ms_per_frame(r.get("tracker") or "")
 
 
 def _metric_float(val: object) -> Optional[float]:
@@ -205,6 +341,9 @@ def _best_metric_values(
             best[col] = max(vals)
         else:
             best[col] = max(vals)
+    ms_vals = [v for v in (_ms_per_frame(r) for r in group) if v is not None]
+    if ms_vals:
+        best["ms/frame"] = min(ms_vals)
     return best
 
 
@@ -218,13 +357,77 @@ def _fmt_metric_cell(col: str, val: str, best: Optional[float]) -> str:
     return text
 
 
+def _glossary_markdown() -> str:
+    lines = [
+        "## Metric glossary",
+        "",
+    ]
+    for name, desc in METRIC_GLOSSARY:
+        lines.append(f"- **{name}** — {desc}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _notes_markdown(rows: Iterable[Dict[str, str]]) -> str:
+    """Detector / protocol caveats that belong next to the published table."""
+    ids = sorted({(r.get("detector_id") or "").strip() for r in rows if r.get("detector_id")})
+    has_target_fps = any(_normalize_fps(r.get("target_fps")) is not None for r in rows)
+    lines = ["## Notes", ""]
+    yolo_ids = [i for i in ids if "yolov8" in i or "expert_eff" in i]
+    if yolo_ids:
+        lines.append(
+            "- **YOLO cache.** Each `detector_id` encodes weights, `imgsz`, `conf`, and "
+            "whether motorcycles are kept. The current pipeline default is "
+            "`yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles`: Ultralytics "
+            "`imgsz=(704, 1280)` (H×W), `conf=0.30`, keep-set bicycle/car/motorcycle/"
+            "bus/truck/forklift/boat (`1,2,3,4,6,19,23`). Person is dropped. "
+            "An older square-letterbox cache "
+            "`…_imgsz1280_conf0.25_vehicles` (keep-set without bicycle/boat) still "
+            "exists on disk for full-rate / 10 FPS tables until those are re-detected."
+        )
+        lines.append(
+            "- **NMS / preprocess vs in-house.** This pipeline uses Ultralytics "
+            "default NMS IoU `0.7` and Ultralytics letterbox. Production may differ "
+            "in NMS IoU, letterbox vs stretch, package version, or post-NMS "
+            "class filtering. A one-sequence replay against an in-house 5 FPS "
+            "export matched boxes at mean IoU ~0.99; leftover extras were a few "
+            "percent of boxes (concentrated on a couple of IDs), not a global "
+            "association mismatch."
+        )
+        lines.append(
+            "- **Bicycle / boat vs vehicle GT.** Those classes are kept to match "
+            "product detections. On vehicle-only ground truth (e.g. Lumana class=1) "
+            "they can count as false positives and slightly lower MOTA/DetA."
+        )
+    if has_target_fps:
+        lines.append(
+            "- **`--fps` eval.** When tracking at a target FPS, TrackEval GT is "
+            "filtered to the same kept frames as the tracker (skipped frames do "
+            "not exist). Full-rate eval is unchanged."
+        )
+    if not yolo_ids and any(i.startswith("gt_") for i in ids):
+        lines.append(
+            "- **GT oracle.** `gt_vehicles` feeds annotated boxes as detections "
+            "(association-only). High DetA is expected; gaps are IDSW/Frag/AssA."
+        )
+    lines.append(
+        "- **IDCons** is mean per-GT modal tracker-ID purity in this repo's "
+        "TrackEval patch. Other groups may report a different identity metric "
+        "under a similar name."
+    )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def render_markdown(rows: Iterable[Dict[str, str]]) -> str:
     rows = sorted(rows, key=_sort_key)
     headers = [
         "benchmark",
         "tracker",
+        "pref_det",
         "detector_id",
         "FPS",
+        "ms/frame",
         "seqs",
         *METRIC_COLS,
         "run_id",
@@ -255,17 +458,28 @@ def render_markdown(rows: Iterable[Dict[str, str]]) -> str:
             lines.append(bench_sep)
         best = _best_metric_values(group)
         for r in group:
+            tracker = r.get("tracker", "")
+            ms = _ms_per_frame(r)
+            ms_cell = _fmt_metric_cell(
+                "ms/frame",
+                "" if ms is None else str(ms),
+                best.get("ms/frame"),
+            )
             cells = [
                 r.get("benchmark", ""),
-                r.get("tracker", ""),
+                display_tracker_name(tracker),
+                preferred_detector(tracker),
                 r.get("detector_id", ""),
                 _display_fps(r),
+                ms_cell,
                 _fmt("sequence_count", r.get("sequence_count", "")),
                 *(_fmt_metric_cell(c, r.get(c, ""), best.get(c)) for c in METRIC_COLS),
                 r.get("run_id", ""),
             ]
             lines.append("| " + " | ".join(cells) + " |")
     lines.append("")
+    lines.append(_notes_markdown(rows))
+    lines.append(_glossary_markdown())
     return "\n".join(lines)
 
 
@@ -274,10 +488,13 @@ def render_csv(rows: Iterable[Dict[str, str]]) -> str:
     fieldnames = [
         "benchmark",
         "tracker",
+        "tracker_year",
+        "preferred_detector",
         "detector_id",
         "detector",
         "FPS",
         "target_fps",
+        "avg_ms_per_frame",
         "sequence_count",
         *METRIC_COLS,
         "run_id",
@@ -291,7 +508,13 @@ def render_csv(rows: Iterable[Dict[str, str]]) -> str:
     w.writeheader()
     for r in rows:
         out = dict(r)
+        tracker = r.get("tracker") or ""
         out["FPS"] = _display_fps(r)
+        year = tracker_year(tracker)
+        out["tracker_year"] = "" if year is None else str(year)
+        out["preferred_detector"] = preferred_detector(tracker)
+        ms = _ms_per_frame(r)
+        out["avg_ms_per_frame"] = "" if ms is None else f"{ms:.4f}"
         w.writerow(out)
     return buf.getvalue()
 
@@ -339,6 +562,8 @@ def main() -> None:
         help="Output path (.md/.csv). Default: print to stdout (and write SSD cmp file for md).",
     )
     args = p.parse_args()
+
+    _load_speed_refs()
 
     rows = _load_rows(
         args.findings_root,

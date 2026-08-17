@@ -6,7 +6,8 @@
 |------|----------------|
 | GT oracle | `gt_vehicles` |
 | Reused seq-local dets | `existing_det_vehicles` |
-| Team expert YOLO (default pipeline) | `yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles` |
+| Team expert YOLO (current default: 704×1280, conf 0.3) | `yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles` |
+| Team expert YOLO (legacy square 1280, conf 0.25) | `yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles` |
 | Stock YOLOv8s cache (if present) | `yolov8s_imgsz1280_conf0.25_vehicles` |
 
 Exact strings are directory names under `_findings/<bench>/<tracker>/`. When the user says “expert YOLO” or “yolov8m”, use the expert id above unless they name another cache.

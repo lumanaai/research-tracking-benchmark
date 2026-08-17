@@ -6,9 +6,10 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from mot_pipeline.class_maps import (
     class_space_for_yolo_weights,
@@ -16,10 +17,17 @@ from mot_pipeline.class_maps import (
     policy_for_coco,
     policy_for_yolo_weights,
 )
+from mot_pipeline.detectors.yolo_ultralytics import (
+    DEFAULT_YOLO_CONF,
+    DEFAULT_YOLO_IMGSZ,
+    DEFAULT_YOLO_IOU,
+    imgsz_tag,
+    parse_imgsz,
+)
 from mot_pipeline.eval.prepare_trackeval import prepare_trackeval_layout
 from mot_pipeline.eval.run_trackeval import run_trackeval
 from mot_pipeline.findings import record_findings
-from mot_pipeline.mot_io import write_json
+from mot_pipeline.mot_io import parse_seqinfo, write_json
 from mot_pipeline.paths import (
     DEFAULT_YOLO_WEIGHTS,
     DETECTIONS_ROOT,
@@ -30,7 +38,7 @@ from mot_pipeline.protocols import RunSpec
 from mot_pipeline.registry import get_benchmark, get_detector, get_tracker
 from mot_pipeline.trackers.analytics_bytetrack import DEFAULT_CFG as AB_DEFAULTS
 from mot_pipeline.trackers.analytics_bytetrack_plus import DEFAULT_CFG as ABP_DEFAULTS
-from mot_pipeline.trackers.base import load_tracker_config
+from mot_pipeline.trackers.base import load_tracker_config, resolve_tracking_schedule
 from mot_pipeline.trackers.botsort import DEFAULT_CFG as BS_DEFAULTS
 from mot_pipeline.trackers.fasttracker import DEFAULT_CFG as FT_DEFAULTS
 from mot_pipeline.trackers.hybridsort import DEFAULT_CFG as HS_DEFAULTS
@@ -121,10 +129,11 @@ def _build_detector(args: argparse.Namespace, benchmark: str):
             class_space=getattr(args, "class_space", None) or "auto",
         )
     if args.detector == "yolov8":
+        keep_override = getattr(args, "keep_classes", None)
         return get_detector(
             "yolov8",
             weights=Path(args.weights) if args.weights else DEFAULT_YOLO_WEIGHTS,
-            imgsz=args.imgsz,
+            imgsz=parse_imgsz(args.imgsz),
             conf=args.conf,
             iou=args.iou,
             batch=args.batch,
@@ -132,6 +141,7 @@ def _build_detector(args: argparse.Namespace, benchmark: str):
             half=args.half,
             exclude_motorcycles=args.exclude_motorcycles,
             max_frames=args.max_frames,
+            keep_classes=keep_override,
         )
     if args.detector == "yolox":
         return get_detector("yolox")
@@ -140,6 +150,9 @@ def _build_detector(args: argparse.Namespace, benchmark: str):
 
 def _track_class_filter(args: argparse.Namespace, benchmark: str):
     """Class filter applied at track time (defense in depth; dets may already be filtered)."""
+    keep_override = getattr(args, "keep_classes", None)
+    if keep_override:
+        return frozenset(int(c) for c in keep_override), frozenset()
     if args.detector == "yolov8":
         weights = Path(args.weights) if args.weights else DEFAULT_YOLO_WEIGHTS
         return policy_for_yolo_weights(weights, args.exclude_motorcycles)
@@ -286,6 +299,10 @@ def cmd_track(args: argparse.Namespace, detections_dir: Optional[Path] = None) -
     tracker = get_tracker(args.tracker, **tracker_kwargs)
     fps_msg = f" @ {float(target_fps):g} FPS (frame subsample)" if target_fps is not None else ""
     print(f"Track [{tracker.name}]{fps_msg} → {tracks_dir}")
+    track_extra = {k: v for k, v in extra.items() if v is not None}
+    per_seq_timing: List[Dict[str, Any]] = []
+    total_frames = 0
+    total_seconds = 0.0
     for i, seq_dir in enumerate(seq_dirs, 1):
         det_path = det_root / seq_dir.name / "det.txt"
         if not det_path.is_file():
@@ -296,13 +313,45 @@ def cmd_track(args: argparse.Namespace, detections_dir: Optional[Path] = None) -
             else:
                 raise FileNotFoundError(f"Missing detections for {seq_dir.name}: {det_path}")
         out_path = tracks_dir / f"{seq_dir.name}.txt"
+        meta = parse_seqinfo(seq_dir)
+        seq_len = int(meta.get("seqLength", 0) or 0)
+        frame_ids, _, _, _ = resolve_tracking_schedule(meta, seq_len, track_extra)
+        n_frames = len(frame_ids) if frame_ids else max(seq_len, 0)
         print(f"  [{i}/{len(seq_dirs)}] {seq_dir.name}")
+        t0 = time.perf_counter()
         tracker.track_sequence(
             seq_dir,
             det_path,
             out_path,
             cfg,
-            extra={k: v for k, v in extra.items() if v is not None},
+            extra=track_extra,
+        )
+        elapsed = time.perf_counter() - t0
+        avg_ms = (1000.0 * elapsed / n_frames) if n_frames > 0 else None
+        per_seq_timing.append(
+            {
+                "sequence": seq_dir.name,
+                "frames": n_frames,
+                "seconds": round(elapsed, 6),
+                "avg_ms_per_frame": None if avg_ms is None else round(avg_ms, 4),
+            }
+        )
+        total_frames += n_frames
+        total_seconds += elapsed
+
+    avg_ms_all = (1000.0 * total_seconds / total_frames) if total_frames > 0 else None
+    timing = {
+        "tracker": tracker.name,
+        "avg_ms_per_frame": None if avg_ms_all is None else round(avg_ms_all, 4),
+        "track_total_seconds": round(total_seconds, 6),
+        "track_total_frames": total_frames,
+        "per_sequence": per_seq_timing,
+    }
+    write_json(exp_dir / "timing.json", timing)
+    if avg_ms_all is not None:
+        print(
+            f"Tracker timing: {avg_ms_all:.3f} ms/frame "
+            f"({total_frames} frames, {total_seconds:.2f}s)"
         )
 
     print(f"Experiment: {exp_dir}")
@@ -337,7 +386,13 @@ def cmd_eval(args: argparse.Namespace, exp_dir: Optional[Path] = None) -> Path:
     tracks_dir = exp_dir / "tracks"
 
     eval_root = exp_dir / "eval" / "trackeval"
-    print(f"Prepare TrackEval layout → {eval_root}")
+    extra = spec.get("extra") or {}
+    fps_msg = ""
+    if extra.get("target_fps") is not None:
+        fps_msg = f" (GT subsampled to {float(extra['target_fps']):g} FPS)"
+    elif extra.get("frame_stride") is not None:
+        fps_msg = f" (GT subsampled stride={extra['frame_stride']})"
+    print(f"Prepare TrackEval layout → {eval_root}{fps_msg}")
     prepared = prepare_trackeval_layout(
         seq_dirs=seq_dirs,
         tracks_dir=tracks_dir,
@@ -345,6 +400,7 @@ def cmd_eval(args: argparse.Namespace, exp_dir: Optional[Path] = None) -> Path:
         tracker_name=tracker_name,
         benchmark=benchmark,
         exclude_motorcycles=exclude_moto,
+        extra=extra,
     )
     write_json(exp_dir / "eval" / "prepare_meta.json", {
         k: (str(v) if isinstance(v, Path) else v) for k, v in prepared.items()
@@ -385,6 +441,16 @@ def cmd_all(args: argparse.Namespace) -> Path:
     args.run_id = exp_dir.name
     cmd_eval(args, exp_dir=exp_dir)
     return exp_dir
+
+
+def _add_yolo_infer_args(sp: argparse.ArgumentParser) -> None:
+    sp.add_argument(
+        "--imgsz",
+        default=imgsz_tag(DEFAULT_YOLO_IMGSZ),
+        help="YOLO size: 1280 or HxW like 704x1280 (Ultralytics H×W).",
+    )
+    sp.add_argument("--conf", type=float, default=DEFAULT_YOLO_CONF)
+    sp.add_argument("--iou", type=float, default=DEFAULT_YOLO_IOU)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -454,13 +520,18 @@ def build_parser() -> argparse.ArgumentParser:
             )
             sp.add_argument("--weights", type=Path, default=None)
             sp.add_argument("--device", default=None)
-            sp.add_argument("--imgsz", type=int, default=1280)
-            sp.add_argument("--conf", type=float, default=0.25)
-            sp.add_argument("--iou", type=float, default=0.7)
+            _add_yolo_infer_args(sp)
             sp.add_argument("--batch", type=int, default=16)
             sp.add_argument("--half", action="store_true")
             sp.add_argument("--max-frames", type=int, default=None)
             sp.add_argument("--force-detect", action="store_true")
+            sp.add_argument(
+                "--keep-classes",
+                nargs="+",
+                type=int,
+                default=None,
+                help="Override detector/track class keep-set (expert_eff ids).",
+            )
             sp.add_argument(
                 "--fps",
                 type=float,
@@ -493,13 +564,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp_d.add_argument("--weights", type=Path, default=None)
     sp_d.add_argument("--device", default=None)
-    sp_d.add_argument("--imgsz", type=int, default=1280)
-    sp_d.add_argument("--conf", type=float, default=0.25)
-    sp_d.add_argument("--iou", type=float, default=0.7)
+    _add_yolo_infer_args(sp_d)
     sp_d.add_argument("--batch", type=int, default=16)
     sp_d.add_argument("--half", action="store_true")
     sp_d.add_argument("--max-frames", type=int, default=None)
     sp_d.add_argument("--force-detect", action="store_true")
+    sp_d.add_argument(
+        "--keep-classes",
+        nargs="+",
+        type=int,
+        default=None,
+        help="Override YOLO class keep-set (expert_eff ids).",
+    )
     sp_d.set_defaults(func=cmd_detect)
 
     sp_t = sub.add_parser("track", help="Run tracker on cached detections.")

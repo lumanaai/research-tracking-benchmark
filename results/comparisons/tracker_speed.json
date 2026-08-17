@@ -1,0 +1,75 @@
+{
+  "benchmark": "fasttracker_bench",
+  "split": "train",
+  "sequence": "task_day_occlusion",
+  "detector_id": "gt_vehicles",
+  "repeats": 2,
+  "results": [
+    {
+      "tracker": "fasttracker",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 9.951581,
+      "avg_ms_per_frame": 5.5908,
+      "all_seconds": [
+        9.951581,
+        10.275831
+      ]
+    },
+    {
+      "tracker": "ocsort",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 16.39164,
+      "avg_ms_per_frame": 9.2088,
+      "all_seconds": [
+        16.573995,
+        16.39164
+      ]
+    },
+    {
+      "tracker": "hybridsort",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 28.624249,
+      "avg_ms_per_frame": 16.081,
+      "all_seconds": [
+        29.02174,
+        28.624249
+      ]
+    },
+    {
+      "tracker": "analytics_bytetrack",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 14.931126,
+      "avg_ms_per_frame": 8.3883,
+      "all_seconds": [
+        17.786008,
+        14.931126
+      ]
+    },
+    {
+      "tracker": "analytics_bytetrack_plus",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 21.418646,
+      "avg_ms_per_frame": 12.0329,
+      "all_seconds": [
+        21.572671,
+        21.418646
+      ]
+    },
+    {
+      "tracker": "botsort",
+      "frames": 1780,
+      "repeats": 2,
+      "best_seconds": 8.859352,
+      "avg_ms_per_frame": 4.9772,
+      "all_seconds": [
+        8.859352,
+        8.989117
+      ]
+    }
+  ]
+}

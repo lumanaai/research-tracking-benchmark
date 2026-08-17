@@ -85,10 +85,11 @@ COCO_VEHICLE = ClassPolicy(
 
 # Team yolov8m-expert_eff taxonomy (NOT COCO numbering for bus/truck):
 # 0 person, 1 bicycle, 2 car, 3 motorcycle, 4 bus, 5 train, 6 truck,
-# 19 forklift, …
+# 19 forklift, 23 boat, …
+# Keep-set matches in-house product (bicycle + boat included; person dropped).
 EXPERT_EFF_VEHICLE = ClassPolicy(
-    keep=frozenset({2, 3, 4, 6, 19}),  # car, motorcycle, bus, truck, forklift
-    drop=frozenset({0, 1}),  # person, bicycle
+    keep=frozenset({1, 2, 3, 4, 6, 19, 23}),
+    drop=frozenset({0}),  # person
     motorcycle_ids=frozenset({3}),
 )
 
@@ -149,6 +150,7 @@ A_MOTORCYCLE = 3
 A_BUS = 4
 A_TRUCK = 6
 A_FORKLIFT = 19
+A_BOAT = 23
 
 
 @dataclass(frozen=True)

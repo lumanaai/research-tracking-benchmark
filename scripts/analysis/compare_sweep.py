@@ -32,7 +32,7 @@ METRIC_COLS = ["HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "IDSW", "Frag",
 HIGHER_IS_BETTER = {"HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDCons", "MT"}
 LOWER_IS_BETTER = {"IDSW", "Frag", "ML"}
 BENCH_ORDER = ["fasttracker_bench", "ua_detrac", "trafficmot", "cityflow", "lumana_benchmark"]
-DEFAULT_DETECTOR = "yolov8m-expert_eff-1_2_imgsz1280_conf0.25_vehicles"
+DEFAULT_DETECTOR = "yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles"
 
 
 def _fps_of(value: object) -> Optional[float]:
