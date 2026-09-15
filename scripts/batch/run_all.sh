@@ -15,6 +15,10 @@
 # Comparison tables:
 #   results/comparisons/gt_vehicles.md / _fps5.md / _fps10.md
 #   results/comparisons/yolov8m_expert_eff.md / _fps5.md / _fps10.md
+#
+# Tracker-grid HTML (no re-track; same latest findings rows):
+#   ./scripts/batch/visualize_all.sh
+#   ./scripts/batch/serve_visualizations.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -27,7 +31,7 @@ if [[ ! -x "$PYTHON" ]]; then
 fi
 
 BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
-TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus botsort})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus analytics_bytetrack_plus_aug19 botsort})
 DETECTORS=(${DETECTORS:-gt yolov8})
 # "full" = every frame (no --fps). Numeric values subsample cached dets.
 # Eval matches tracking: when --fps is set, TrackEval GT is filtered to the

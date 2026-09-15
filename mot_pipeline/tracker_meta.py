@@ -43,6 +43,11 @@ TRACKER_META: Dict[str, Dict[str, Any]] = {
         "ref_ms_per_frame": 12.0329,
         "note": "In-house ByteTrack+ (crossover/parked); same YOLO det preference.",
     },
+    "analytics_bytetrack_plus_aug19": {
+        "year": 2026,
+        "preferred_detector": "YOLO",
+        "note": "Aug19 ByteTrack+ (CIoU + retuned crossover/lifecycle); YOLO preferred.",
+    },
     "botsort": {
         "year": 2022,
         "preferred_detector": "YOLOX",

@@ -6,6 +6,9 @@ Examples:
   .venv/bin/python scripts/analysis/compare_findings.py --detector-id gt_vehicles --target-fps 10
   .venv/bin/python scripts/analysis/compare_findings.py --run-id-substr 20260729_085336
   .venv/bin/python scripts/analysis/compare_findings.py --detector-id gt_vehicles --out /tmp/cmp.md
+
+Video of the same latest rows (no re-track):
+  ./scripts/batch/visualize_all.sh && ./scripts/batch/serve_visualizations.sh
 """
 
 from __future__ import annotations
@@ -52,6 +55,7 @@ TRACKER_ORDER = [
     "hybridsort",
     "analytics_bytetrack",
     "analytics_bytetrack_plus",
+    "analytics_bytetrack_plus_aug19",
     "botsort",
     "traffictrack",
 ]

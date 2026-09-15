@@ -17,7 +17,8 @@ Data / artifacts live on the SSD under `/media/7TBSSD/data/tracking/`.
 | Experiments | `experiments/<run_id>/{tracks,eval,config.json}` |
 | Findings indexes | `experiments/_findings/<benchmark>/<tracker>/<detector_id>/findings.csv` |
 | GT viz videos | `*_visualizations/` siblings of each dataset |
-| Tracker viz | usually `*_visualizations/tracked/` or an explicit `--out` path |
+| Tracker-grid HTML | `visualizations/<detector_stem>/fps{5,10,full}/<benchmark>/` |
+| One-off MOT overlay | `*_visualizations/tracked/` or an explicit `--out` path |
 
 ---
 
@@ -125,7 +126,7 @@ Standalone (legacy, writes into each sequence’s `det/det.txt`):
 
 `all` = detect (cached) → track → TrackEval → update findings index.
 
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `botsort` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `analytics_bytetrack_plus_aug19`, `botsort` (all motion-only). `traffictrack` is still a stub (`TODOs.md`).
 
 Default configs:
 - FastTracker: per-benchmark (`fasttracker_bench.json`, `detrac_no_roi.json`, `general_no_roi.json`)
@@ -134,6 +135,7 @@ Default configs:
 - BoT-SORT: `mot_pipeline/configs/trackers/botsort/default.json` (ReID off; CMC `none` by default)
 - Analytics ByteTrack: `mot_pipeline/configs/trackers/analytics_bytetrack/benchmark.json` (pass `production.json` for the as-deployed settings)
 - Analytics ByteTrack Plus: `mot_pipeline/configs/trackers/analytics_bytetrack_plus/benchmark.json`
+- Analytics ByteTrack Plus Aug19: `mot_pipeline/configs/trackers/analytics_bytetrack_plus_aug19/aug19.json`
 
 ### FastTracker-Benchmark
 
@@ -212,6 +214,17 @@ Same analytics wrapper path; engine is `ByteTrackerPlus/byte_tracker_plus.py`
   --benchmark lumana_benchmark --tracker analytics_bytetrack_plus --detector gt
 ```
 
+### Analytics ByteTrack Plus Aug19
+
+Independent Plus engine (`ByteTrackerPlusAug19/`) with CIoU + Aug19 tuning.
+Default: `mot_pipeline/configs/trackers/analytics_bytetrack_plus_aug19/aug19.json`.
+
+```bash
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker analytics_bytetrack_plus_aug19 --detector yolov8 \
+  --fps 5 --sequences task_day_occlusion
+```
+
 ### UA-DETRAC
 
 ```bash
@@ -283,7 +296,71 @@ Generic MOT overlay (works for any benchmark once you have frames + a track txt)
   --fps 30 --label "FastTracker"
 ```
 
-### Batch: all sequences of one experiment
+### Batch grids from run_all.sh findings (`visualize_all.sh`)
+
+Does **not** re-detect or re-track. Reads the **same latest findings row** as
+`compare_findings.py` and overlays `experiments/<run_id>/tracks/*.txt` on MOT
+`img1` frames.
+
+Default generate: YOLO (`yolov8m-expert_eff`), **3 sequences** × 8 s snippets
+from 20% in, max width 480, one HTML grid per benchmark × FPS. The viewer shows
+one video at a time with all trackers tiled; **Dataset** and **Video** dropdowns
+switch grids / sequences (dataset list = sibling folders under the same FPS
+dir that already have `manifest.json`).
+
+If only 3 videos appear, the rest were never rendered (`N_SEQS=3`). Tracking
+results can still exist for every sequence.
+
+```bash
+# Step 1 — generate snippets + HTML (does not start a server)
+./scripts/batch/visualize_all.sh
+BENCHMARKS=lumana_benchmark FPS_VALUES="5" ./scripts/batch/visualize_all.sh
+N_SEQS=0 BENCHMARKS=lumana_benchmark FPS_VALUES="5" ./scripts/batch/visualize_all.sh  # all seqs with img1/
+
+# Step 2 — host
+./scripts/batch/serve_visualizations.sh
+# PORT=9000 ./scripts/batch/serve_visualizations.sh
+```
+
+Then open `http://127.0.0.1:8765/yolov8m_expert_eff/fps5/lumana_benchmark/index.html`
+(or `http://127.0.0.1:8765/` for the landing list). Hard-refresh after re-generate.
+Stop with Ctrl+C, or `pkill -f 'visualize_all.py --serve-only'`.
+
+| Env | Default | Meaning |
+|-----|---------|---------|
+| `BENCHMARKS` | all five | CLI ids (`lumana_benchmark`, `fasttracker_bench`, …) |
+| `TRACKERS` | all wired motion trackers | same list as `run_all.sh` |
+| `FPS_VALUES` | `5 10 full` | must match findings `target_fps` |
+| `N_SEQS` | `3` | `0` = every sequence with `img1/` |
+| `SNIPPET_SEC` | `8` | `0` = full clip from the start |
+| `START_FRAC` | `0.2` | ignored when `SNIPPET_SEC=0` |
+| `FORCE` | `0` | `1` = re-encode existing JPEG cells |
+| `RUN_ID_SUBSTR` | latest row | pin a sweep timestamp |
+| `OUT_ROOT` | SSD `visualizations/` | do not write grids to the NAS |
+
+Rewrite HTML from existing `cells/` + `manifest.json` (no re-encode):
+
+```bash
+.venv/bin/python scripts/visualize/visualize_all.py --html-only \
+  --out-root /media/7TBSSD/data/tracking/visualizations
+```
+
+One benchmark / FPS via Python:
+
+```bash
+.venv/bin/python scripts/visualize/visualize_all.py \
+  --benchmark fasttracker_bench --detector yolov8 --fps 5
+```
+
+Layout on SSD:
+
+```
+visualizations/<detector_stem>/fps{5,10,full}/<benchmark>/{index.html,manifest.json,cells/…}
+```
+
+---
+
+### One experiment, all sequences
 
 ```bash
 RUN=my_run
@@ -412,6 +489,10 @@ find /media/7TBSSD/data/tracking/experiments/_findings -name findings.csv
 # Parallel YOLO detect (multi-GPU) → track → eval
 DETECTOR=yolov8 GPUS="0 1 2 3" ./scripts/batch/run_all_parallel.sh
 DETECTOR=yolov8 GPUS="0 1 2 3 4 5 6 7" SHARD_SEQS=1 TRACK_JOBS=12 ./scripts/batch/run_all_parallel.sh
+
+# Overlay the same latest findings as HTML grids (no re-track)
+./scripts/batch/visualize_all.sh
+./scripts/batch/serve_visualizations.sh
 ```
 
 ---
@@ -425,10 +506,12 @@ DETECTOR=yolov8 GPUS="0 1 2 3 4 5 6 7" SHARD_SEQS=1 TRACK_JOBS=12 ./scripts/batc
 | Use existing dets | `--detector existing` |
 | Run YOLO | `--detector yolov8 --device cuda:0` |
 | Oracle association | `--detector gt` |
-| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack,analytics_bytetrack_plus,botsort} --detector …` |
+| Full track+metrics | `-m mot_pipeline.run all --benchmark … --tracker {fasttracker,ocsort,hybridsort,analytics_bytetrack,analytics_bytetrack_plus,analytics_bytetrack_plus_aug19,botsort} --detector …` |
 | Parallel YOLO sweep | `./scripts/batch/run_all_parallel.sh` |
 | Re-eval | `-m mot_pipeline.run eval --run-id …` |
-| Overlay tracks | `scripts/visualize/visualize_mot_results.py --frames … --results … --out …` |
+| Overlay tracks (one seq) | `scripts/visualize/visualize_mot_results.py --frames … --results … --out …` |
+| Tracker grids (from findings) | `./scripts/batch/visualize_all.sh` then `./scripts/batch/serve_visualizations.sh` |
+| All sequences in a grid | `N_SEQS=0 BENCHMARKS=… FPS_VALUES="5" ./scripts/batch/visualize_all.sh` |
 | Compare runs | `scripts/analysis/compare_findings.py --detector-id …` |
 | Findings CSV | `experiments/_findings/<bench>/<tracker>/<det_id>/findings.csv` |
 

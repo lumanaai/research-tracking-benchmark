@@ -18,9 +18,12 @@
 4. `mot_pipeline/class_maps.py`
 5. `mot_pipeline/run.py` — `--benchmark` choices
 6. `scripts/batch/run_all{,_parallel,_gt_trackers}.sh` — `BENCHMARKS`
-7. `scripts/analysis/compare_findings.py` — `BENCH_ORDER`, `NATIVE_FPS`
-8. `scripts/visualize/visualize_<bench>.py`
-9. `AGENTS.md` (+ `README.md` / `important_commands.md`)
+7. `scripts/batch/visualize_all.sh` — `BENCHMARKS`
+8. `scripts/visualize/visualize_all.py` — `DEFAULT_BENCHMARKS`, `PREFERRED_SEQUENCES`
+9. `scripts/visualize/grid_page.py` — `DATASET_LABELS`
+10. `scripts/analysis/compare_findings.py` — `BENCH_ORDER`, `NATIVE_FPS`
+11. `scripts/visualize/visualize_<bench>.py`
+12. `AGENTS.md` (+ `README.md` / `important_commands.md`)
 
 ## Class policy notes
 

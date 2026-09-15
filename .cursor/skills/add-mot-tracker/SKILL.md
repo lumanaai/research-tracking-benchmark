@@ -2,8 +2,8 @@
 name: add-mot-tracker
 description: >-
   Wire a new motion tracker into the MOT pipeline (adapter, CLI, configs, batch
-  sweeps, findings). Use when adding a tracker, integrating BoT-SORT/OC-SORT-style
-  clones, extending TRACKERS, or registering a tracker stub.
+  sweeps, findings, visualize_all grids). Use when adding a tracker, integrating
+  BoT-SORT/OC-SORT-style clones, extending TRACKERS, or registering a tracker stub.
 ---
 
 # Add MOT tracker
@@ -28,7 +28,7 @@ Copy and track progress:
 - [ ] 5. Config JSON
 - [ ] 6. Batch TRACKERS defaults
 - [ ] 7. compare_findings TRACKER_ORDER + tracker_meta.py (year, preferred_detector)
-- [ ] 8. Docs (README / AGENTS / important_commands; TODOs if deferred)
+- [ ] 8. visualize_all TRACKERS + docs
 - [ ] 9. Smoke run
 ```
 
@@ -77,6 +77,9 @@ Append `<name>` to `TRACKERS=(${TRACKERS:-...})` in:
 - `scripts/batch/run_all.sh`
 - `scripts/batch/run_all_parallel.sh`
 - `scripts/batch/run_all_gt_trackers.sh`
+- `scripts/batch/visualize_all.sh`
+
+Also append to `DEFAULT_TRACKERS` in `scripts/visualize/visualize_all.py`.
 
 Skip stubs explicitly in the loop if they would crash (see `traffictrack`).
 
@@ -85,12 +88,13 @@ Skip stubs explicitly in the loop if they would crash (see `traffictrack`).
 Add to `TRACKER_ORDER` in `scripts/analysis/compare_findings.py`.  
 `run_all_compare_findings.sh` needs no change (detector-driven).
 
-### 8. Docs
+### 8. Docs + grids
 
 - `README.md` — trackers table + layout clone dir + license path if applicable.
 - `AGENTS.md` — tracker list, defaults, usage snippet.
 - `important_commands.md` — tracker list / example commands.
 - Deferred features (ReID, etc.) → `TODOs.md`.
+- Tracker-grid viewer: keep `TRACKERS` in `visualize_all.sh` in sync (step 6). After a smoke run, `BENCHMARKS=fasttracker_bench FPS_VALUES="5" ./scripts/batch/visualize_all.sh` overlays the new tracker without re-detecting.
 
 ### 9. Smoke
 

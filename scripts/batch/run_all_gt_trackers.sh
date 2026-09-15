@@ -10,6 +10,10 @@
 # (…_fpsN_…) and a separate comparison file is written:
 #   results/comparisons/<detector_id>_fpsN.md
 # Full-rate tables like results/comparisons/gt_vehicles.md are left untouched.
+#
+# Overlay those GT-oracle tracks (no re-track):
+#   DETECTORS=gt ./scripts/batch/visualize_all.sh
+#   ./scripts/batch/serve_visualizations.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -23,7 +27,7 @@ fi
 
 # Default: all benchmarks × motion trackers (skip traffictrack stub).
 BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
-TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus botsort})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus analytics_bytetrack_plus_aug19 botsort})
 DETECTOR="${DETECTOR:-gt}"
 # Used when DETECTOR=yolov8 (e.g. cuda:0). Ignored for gt/existing.
 DEVICE="${DEVICE:-}"

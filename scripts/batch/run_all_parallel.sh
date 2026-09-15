@@ -14,6 +14,9 @@
 #   FPS=10 DETECTOR=yolov8 GPUS="0 1 2 3" ./scripts/batch/run_all_parallel.sh
 #   DRY_RUN=1 DETECTOR=yolov8 GPUS="0 1 2 3" ./scripts/batch/run_all_parallel.sh
 #
+# After eval, overlay latest findings (no re-track):
+#   ./scripts/batch/visualize_all.sh && ./scripts/batch/serve_visualizations.sh
+#
 # With FPS set, writes a separate comparison file (does not overwrite full-rate tables):
 #   results/comparisons/<detector_id>_fpsN.md
 set -uo pipefail
@@ -28,7 +31,7 @@ if [[ ! -x "$PYTHON" ]]; then
 fi
 
 BENCHMARKS=(${BENCHMARKS:-fasttracker_bench ua_detrac trafficmot cityflow lumana_benchmark})
-TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus botsort})
+TRACKERS=(${TRACKERS:-fasttracker ocsort hybridsort analytics_bytetrack analytics_bytetrack_plus analytics_bytetrack_plus_aug19 botsort})
 DETECTOR="${DETECTOR:-yolov8}"
 GPUS=(${GPUS:-0 1 2 3})
 WEIGHTS="${WEIGHTS:-}"

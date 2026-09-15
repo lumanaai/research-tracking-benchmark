@@ -9,7 +9,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Optional
 
 from mot_pipeline.paths import FINDINGS_ROOT
 
@@ -153,3 +153,68 @@ def record_findings(
     writer.writerows(records)
     _atomic_write(csv_path, buffer.getvalue())
     return combo_dir
+
+
+def combo_dir(benchmark: str, tracker: str, detector_id: str) -> Path:
+    return (
+        FINDINGS_ROOT
+        / _safe_component(benchmark)
+        / _safe_component(tracker)
+        / _safe_component(detector_id)
+    )
+
+
+def normalize_target_fps(val: object) -> Optional[float]:
+    """Return float FPS or None for full-rate / missing (same rule as compare_findings)."""
+    if val is None:
+        return None
+    text = str(val).strip()
+    if text in ("", "None", "null", "—", "-"):
+        return None
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def load_combo_records(benchmark: str, tracker: str, detector_id: str) -> list[Dict[str, Any]]:
+    path = combo_dir(benchmark, tracker, detector_id) / "findings.json"
+    if not path.is_file():
+        return []
+    records = json.loads(path.read_text())
+    if not isinstance(records, list):
+        raise ValueError(f"Expected a list in findings index: {path}")
+    return [r for r in records if isinstance(r, dict)]
+
+
+def latest_record(
+    *,
+    benchmark: str,
+    tracker: str,
+    detector_id: str,
+    target_fps: Optional[float] = None,
+    run_id_substr: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Newest evaluated run for one combo, matching compare_findings latest-row rules.
+
+    ``target_fps=None`` selects full-rate rows only (rows with no target_fps).
+    """
+    matched: list[Dict[str, Any]] = []
+    for record in load_combo_records(benchmark, tracker, detector_id):
+        run_id = str(record.get("run_id") or "")
+        if run_id_substr and run_id_substr not in run_id:
+            continue
+        row_fps = normalize_target_fps(record.get("target_fps"))
+        if target_fps is None:
+            if row_fps is not None:
+                continue
+        else:
+            if row_fps is None or abs(row_fps - float(target_fps)) > 1e-6:
+                continue
+        matched.append(record)
+    if not matched:
+        return None
+    return max(
+        matched,
+        key=lambda item: (str(item.get("evaluated_at") or ""), str(item.get("run_id") or "")),
+    )

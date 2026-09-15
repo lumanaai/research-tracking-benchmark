@@ -28,3 +28,5 @@ Notes:
 - GT = association-only stress test (perfect boxes).
 - YOLO = joint detector+tracker score; DetA is limited by the detector.
 - Same expert det cache shared across all three trackers per benchmark.
+
+Side-by-side video of the latest findings rows (no re-track): `./scripts/batch/visualize_all.sh` then `./scripts/batch/serve_visualizations.sh`. See `important_commands.md` §5.

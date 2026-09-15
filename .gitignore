@@ -50,12 +50,28 @@ models/
 *.mov
 *.wav
 *.gif
+*.webm
+*.jpg
+*.jpeg
 .cache/
 wandb/
 runs/
 outputs/
 tmp/
 temp/
+.ipynb_checkpoints/
+
+# SSD MOT artifacts (keep on /media/7TBSSD/data/tracking/; never commit
+# even if a script is pointed at the repo root)
+/experiments/
+/detections/
+/visualizations/
+/mot/
+/weights/
+*_visualizations/
+
+# Published comparison tables in results/comparisons/ are source of record
+# and should stay tracked. Do not ignore that directory.
 
 # Upstream clone noise / fixtures (not needed to run our pipeline)
 **/evaldata/

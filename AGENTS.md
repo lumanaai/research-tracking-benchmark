@@ -26,6 +26,7 @@ Build and evaluate vehicle / traffic multi-object tracking benchmarks (UA-DETRAC
 | `/media/7TBSSD/data/tracking/mot/` | Normalized MOTChallenge roots (converters / symlinks). |
 | `/media/7TBSSD/data/tracking/detections/` | Shared detector cache (`<bench>/<split>/<detector_id>/<seq>/det.txt`). |
 | `/media/7TBSSD/data/tracking/experiments/` | Track + eval runs (`<run_id>/{config,tracks,eval}/`). |
+| `/media/7TBSSD/data/tracking/visualizations/` | Tracker-grid HTML from `visualize_all.sh` (latest findings). |
 | `mot_pipeline/` | Unified detect→track→eval package (benchmarks / detectors / trackers). |
 | `.venv` | Symlink from project root → that venv. |
 
@@ -349,7 +350,7 @@ Default expert_eff keep-set drops person and **includes** motorcycles, bicycles,
 
 Benchmarks: `fasttracker_bench`, `ua_detrac`, `trafficmot`, `cityflow`, `lumana_benchmark`.  
 Detectors: `gt`, `yolov8`, `existing` (reuse each sequence's `det/det.txt`), `yolox` (stub).  
-Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
+Trackers: `fasttracker`, `ocsort`, `hybridsort`, `analytics_bytetrack`, `analytics_bytetrack_plus`, `analytics_bytetrack_plus_aug19`, `botsort` (motion-only wired); `traffictrack` (stub — see `TODOs.md`).
 
 Default FastTracker configs (override with `--tracker-config`):
 - `fasttracker_bench` → `configs/trackers/fasttracker/fasttracker_bench.json`
@@ -361,6 +362,8 @@ OC-SORT / HybridSORT / BoT-SORT defaults: `configs/trackers/ocsort/default.json`
 Analytics ByteTrack (live import from `analytics/analyzer_manager/app/tracking/`): default `configs/trackers/analytics_bytetrack/benchmark.json`; as-deployed settings in `production.json`. Shim lives in `mot_pipeline/trackers/analytics_shim.py` — no changes to the analytics clone.
 
 Analytics ByteTrack Plus (same wrapper + `ByteTrackerPlus/` engine with crossover / parked-vehicle logic): default `configs/trackers/analytics_bytetrack_plus/benchmark.json`.
+
+Analytics ByteTrack Plus Aug19 (independent `ByteTrackerPlusAug19/` engine with CIoU + Aug19 tuning): default `configs/trackers/analytics_bytetrack_plus_aug19/aug19.json`.
 
 Other benchmark defaults: UA-DETRAC / CityFlow / LumanaBenchmark → `--split train`; TrafficMOT → `--split Fully_annotate`. CityFlow sequence names are flattened (`S01_c001`).
 
@@ -397,6 +400,16 @@ Same analytics wrapper; association engine is `ByteTrackerPlus/` (crossover / pa
 ```bash
 .venv/bin/python -m mot_pipeline.run all \
   --benchmark fasttracker_bench --tracker analytics_bytetrack_plus --detector existing \
+  --sequences task_day_occlusion
+```
+
+### Analytics ByteTrack Plus Aug19
+
+Independent Plus engine under `ByteTrackerPlusAug19/` (CIoU association + Aug19 lifecycle/crossover tuning). Default config: `configs/trackers/analytics_bytetrack_plus_aug19/aug19.json`.
+
+```bash
+.venv/bin/python -m mot_pipeline.run all \
+  --benchmark fasttracker_bench --tracker analytics_bytetrack_plus_aug19 --detector existing \
   --sequences task_day_occlusion
 ```
 
@@ -455,11 +468,37 @@ Hybrid-SORT-ReID, ByteSReid, BoT-SORT-ReID, and TrafficTrack are deferred — se
 TrackEval writes `experiments/<run_id>/eval/summary.csv` + `summary.json` with per-sequence and `COMBINED` **HOTA** (DetA/AssA), **CLEAR** (MOTA/MOTP/IDSW/Frag/MT/ML/FP/FN), **Identity** (IDF1/IDP/IDR), **IDCons** (mean per-GT tracker-ID purity).
 Cross-run indexes live at `experiments/_findings/<benchmark>/<tracker>/<detector_id>/findings.csv` (spreadsheet-friendly) and `findings.json` (full structured records).
 
+### Visualize latest runs (`visualize_all.sh`)
+
+Does **not** re-detect or re-track. Looks up the same latest findings row as `compare_findings.py` (`latest_record`) and overlays `experiments/<run_id>/tracks/*.txt` on MOT `img1` frames. Default: YOLO (`yolov8m-expert_eff-1_2_imgsz704x1280_conf0.3_vehicles`), 3 sequences × 8 s snippets from 20% in, downscaled cells (max width 480). `N_SEQS=0` = every sequence that has frames; `SNIPPET_SEC=0` = full clip from the start. One HTML grid per benchmark × FPS under `/media/7TBSSD/data/tracking/visualizations/`.
+
+Two steps — generate, then host (headless: do not `xdg-open`):
+
+```bash
+./scripts/batch/visualize_all.sh
+./scripts/batch/serve_visualizations.sh
+# slice: N_SEQS=0 BENCHMARKS=lumana_benchmark FPS_VALUES="5" ./scripts/batch/visualize_all.sh
+```
+
+Then `http://127.0.0.1:8765/yolov8m_expert_eff/fps5/lumana_benchmark/index.html`. Viewer: one sequence at a time, all trackers tiled; **Dataset** dropdown (sibling grids under the same FPS folder) and **Video** dropdown (rendered sequences only). JPEG + JS scrub — not `<video>`. Rewrite HTML without re-encoding: `--html-only`. Stop serve with Ctrl+C.
+
+Layout:
+
+```
+visualizations/<detector_stem>/index.html
+  fps5|fps10|full/<benchmark>/{index.html,manifest.json,cells/<tracker>/<seq>/*.jpg}
+```
+
+Preferred first sequences (when `N_SEQS>0`) live in `scripts/visualize/visualize_all.py` (`PREFERRED_SEQUENCES`). Dataset display names: `scripts/visualize/grid_page.py` (`DATASET_LABELS`). Keep `N_SEQS=3` as the bash default — full UA-DETRAC / CityFlow × all trackers is a large encode.
+
+Operator cheat-sheet: [`important_commands.md`](important_commands.md) §5. Agent skill: `.cursor/skills/visualize-mot-grids/`.
+
 ## Conventions
 
 - Prefer scripts under `scripts/<area>/` (`visualize/`, `convert/`, `detect/`, `batch/`, `analysis/`) with clear CLI args. Keep `mot_pipeline/` as the package; do not nest clones under `scripts/`.
 - Dataset paths should be arguments, not hard-coded — defaults may point at the SSD paths above.
 - Put generated videos, caches, and checkpoints next to the data on `/media/7TBSSD/data/tracking/`, not on the NAS project root.
 - Batch sweeps: `./scripts/batch/run_all.sh`, `./scripts/batch/run_all_gt_trackers.sh` (GT oracle), and `./scripts/batch/run_all_parallel.sh` (multi-GPU detect → track → eval). Default `TRACKERS` includes `botsort`.
+- Visualize those runs (no re-track): `./scripts/batch/visualize_all.sh` then `./scripts/batch/serve_visualizations.sh` → `/media/7TBSSD/data/tracking/visualizations/`. `N_SEQS=0` for all sequences with frames.
 - Findings tables: `.venv/bin/python scripts/analysis/compare_findings.py --detector-id …` (or `./scripts/analysis/run_all_compare_findings.sh`).
 - Do not commit secrets, raw dataset dumps, or the venv contents; `.venv` is a symlink only.

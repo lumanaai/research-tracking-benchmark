@@ -82,6 +82,8 @@ More detector aliases and interpretation notes: [reference.md](reference.md).
 - Prefer HOTA + AssA + IDF1 for tracker ranking; MOTA alone can mislead under detector FP/FN.
 - Each markdown table ends with a **Metric glossary** covering HOTA/DetA/AssA/MOTA/IDF1/IDCons/IDSW/Frag/MT/ML/FPS/ms/frame/pref_det.
 
+Side-by-side video of the same latest findings rows: `./scripts/batch/visualize_all.sh` then `./scripts/batch/serve_visualizations.sh` (skill: `visualize-mot-grids`). Does not re-track.
+
 ### Refresh speed refs
 
 ```bash

@@ -28,6 +28,7 @@ Converters turn each dataset into a MOTChallenge-style layout under `mot/<Benchm
 | `botsort` | Vendored [BoT-SORT](https://github.com/NirAharon/BoT-SORT) (motion-only; ReID off) |
 | `analytics_bytetrack` | In-house ByteTrack via the vendored `analytics/` tree |
 | `analytics_bytetrack_plus` | Same as above with crossover / parked-vehicle engine (`ByteTrackerPlus/`) |
+| `analytics_bytetrack_plus_aug19` | Aug19 Plus engine (`ByteTrackerPlusAug19/`; CIoU + retuned lifecycle) |
 | `traffictrack` | Stub only (see [`TODOs.md`](TODOs.md)) |
 
 Upstream clones are committed as plain directories (not git submodules). BoT-SORT appearance ReID is deferred (`TODOs.md`); CMC defaults to `none` (enable `sparseOptFlow` via tracker JSON if needed).
@@ -47,13 +48,14 @@ Default keep-sets are vehicle-oriented (motorcycles included; person / bicycle /
 
 ```
 mot_pipeline/          # convert / detect / track / eval package
-scripts/               # visualize, convert helpers, batch sweeps, analysis
+scripts/               # visualize (GT + tracker grids), convert helpers, batch sweeps, analysis
 FastTracker/           # vendored tracker + TrackEval
 OC_SORT/
 HybridSORT/
 BoT-SORT/              # motion-only via botsort adapter (FastReID stubbed)
 analytics/             # in-house analytics (ByteTrack source used by the shim)
 ByteTrackerPlus/       # modified analytics ByteTrack engine (analytics_bytetrack_plus)
+ByteTrackerPlusAug19/  # Aug19 Plus engine (analytics_bytetrack_plus_aug19)
 results/comparisons/   # published comparison tables
 ```
 
@@ -63,6 +65,7 @@ Typical data root (SSD, not this repo):
 <DATA>/mot/                  # normalized MOTChallenge sequences
 <DATA>/detections/           # shared detector cache
 <DATA>/experiments/          # per-run config, tracks, eval
+<DATA>/visualizations/       # tracker-grid HTML from visualize_all.sh
 <DATA>/weights/              # YOLO / ReID checkpoints
 ```
 
@@ -110,6 +113,24 @@ Stage-wise: `detect`, `track`, `eval --run-id <id>`.
 
 Batch helpers: `scripts/batch/run_all.sh`, `scripts/batch/run_all_gt_trackers.sh`, `scripts/batch/run_all_parallel.sh` (default tracker list includes `botsort`).  
 Comparison tables: `scripts/analysis/compare_findings.py`, `scripts/analysis/run_all_compare_findings.sh`, and `results/comparisons/`.
+
+## Visualize tracker grids
+
+Does **not** re-detect or re-track. Looks up the same latest `experiments/_findings` row as `compare_findings.py` and overlays `experiments/<run_id>/tracks/*.txt` on MOT frames. Output: `/media/7TBSSD/data/tracking/visualizations/` (SSD).
+
+```bash
+# 1) generate JPEG cells + HTML (default: YOLO, 3 sequences × 8 s per bench × FPS)
+./scripts/batch/visualize_all.sh
+# all sequences that have img1/ frames:
+N_SEQS=0 BENCHMARKS=lumana_benchmark FPS_VALUES="5" ./scripts/batch/visualize_all.sh
+
+# 2) host (separate step)
+./scripts/batch/serve_visualizations.sh
+```
+
+Open `http://127.0.0.1:8765/yolov8m_expert_eff/fps5/lumana_benchmark/index.html`. The viewer shows one video at a time with all trackers tiled; **Dataset** and **Video** dropdowns switch grids / sequences. Stop the server with Ctrl+C.
+
+Full flags and env vars: [`important_commands.md`](important_commands.md) §5 and [`AGENTS.md`](AGENTS.md).
 
 ## Metrics
 

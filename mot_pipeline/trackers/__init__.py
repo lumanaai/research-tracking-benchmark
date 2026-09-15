@@ -1,5 +1,8 @@
 from mot_pipeline.trackers.analytics_bytetrack import AnalyticsByteTrackAdapter
 from mot_pipeline.trackers.analytics_bytetrack_plus import AnalyticsByteTrackPlusAdapter
+from mot_pipeline.trackers.analytics_bytetrack_plus_aug19 import (
+    AnalyticsByteTrackPlusAug19Adapter,
+)
 from mot_pipeline.trackers.botsort import BoTSORTAdapter
 from mot_pipeline.trackers.fasttracker import FastTrackerAdapter
 from mot_pipeline.trackers.hybridsort import HybridSORTAdapter
@@ -13,6 +16,7 @@ TRACKERS = {
     "hybridsort": HybridSORTAdapter,
     "analytics_bytetrack": AnalyticsByteTrackAdapter,
     "analytics_bytetrack_plus": AnalyticsByteTrackPlusAdapter,
+    "analytics_bytetrack_plus_aug19": AnalyticsByteTrackPlusAug19Adapter,
     "botsort": BoTSORTAdapter,
 }
 

@@ -2,9 +2,9 @@
 name: add-mot-benchmark
 description: >-
   Wire a new tracking dataset into the MOT pipeline (converter, benchmark
-  adapter, class maps, batch sweeps, findings). Use when adding a
-  benchmark/dataset, converting a new MOT source, or extending BENCHMARKS /
-  RAW_DATASETS.
+  adapter, class maps, batch sweeps, findings, visualize_all grids). Use when
+  adding a benchmark/dataset, converting a new MOT source, or extending
+  BENCHMARKS / RAW_DATASETS.
 ---
 
 # Add MOT benchmark
@@ -32,7 +32,7 @@ Copy and track progress:
 - [ ] 6. run.py --benchmark choices (+ optional FastTracker/existing tweaks)
 - [ ] 7. Batch BENCHMARKS defaults
 - [ ] 8. compare_findings BENCH_ORDER + NATIVE_FPS
-- [ ] 9. Viz script + AGENTS.md / docs
+- [ ] 9. Viz script + visualize_all wiring + docs
 - [ ] 10. Smoke convert + all
 ```
 
@@ -90,6 +90,7 @@ Append `<bench_id>` to `BENCHMARKS=(${BENCHMARKS:-...})` in:
 - `scripts/batch/run_all.sh`
 - `scripts/batch/run_all_parallel.sh`
 - `scripts/batch/run_all_gt_trackers.sh`
+- `scripts/batch/visualize_all.sh`
 
 ### 8. Findings tables
 
@@ -104,6 +105,7 @@ Optional: `scripts/analysis/compute_benchmark_statistics.py` (`BENCH_META` / cla
 
 - `scripts/visualize/visualize_<bench>.py` — GT boxes/IDs/trails; default out under `<DatasetName>_visualizations/`.
 - Tracker overlay: existing `visualize_mot_results.py` (no change).
+- Tracker grids (`visualize_all.sh`): add `<bench_id>` to `DEFAULT_BENCHMARKS` and `PREFERRED_SEQUENCES` in `scripts/visualize/visualize_all.py`, and `DATASET_LABELS` in `scripts/visualize/grid_page.py`. Sequences without `img1/` are skipped.
 - `AGENTS.md` — layout table rows + dataset section (structure, convert, viz).
 - `README.md` / `important_commands.md` — bench id in tables/commands.
 

@@ -1,6 +1,6 @@
 # Tracker comparison
 
-_30 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
+_31 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
 
 | benchmark | tracker | pref_det | detector_id | FPS | ms/frame | seqs | HOTA | DetA | AssA | MOTA | IDF1 | IDCons | IDSW | Frag | MT | ML | run_id |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -32,12 +32,19 @@ _30 runs from `/media/7TBSSD/data/tracking/experiments/_findings`_
 | cityflow | analytics_bytetrack_plus (2022) | YOLO | gt_vehicles | 5 | 1.06 | 36 | 0.934 | 0.971 | 0.897 | 0.969 | 0.935 | 0.977 | 100 | 204 | 683 | 37 | cityflow_analytics_bytetrack_plus_gt_fps5_20260817_083521 |
 | cityflow | botsort (2022) | YOLOX | gt_vehicles | 5 | **0.63** | 36 | 0.926 | 0.942 | 0.912 | **0.984** | **0.959** | 0.903 | 532 | 169 | **806** | **0** | cityflow_botsort_gt_fps5_20260817_083521 |
 | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ | ═══ |
-| lumana_benchmark | fasttracker (2025) | YOLOX | gt_vehicles | 5 | 1.80 | 24 | 0.892 | 0.901 | 0.885 | 0.934 | 0.915 | 0.878 | 355 | 458 | 329 | 51 | lumana_benchmark_fasttracker_gt_fps5_20260817_083521 |
-| lumana_benchmark | ocsort (2023) | YOLOX | gt_vehicles | 5 | 1.95 | 24 | 0.927 | 0.959 | 0.896 | 0.956 | 0.921 | **0.917** | **185** | **376** | 244 | 113 | lumana_benchmark_ocsort_gt_fps5_20260817_083521 |
-| lumana_benchmark | hybridsort (2024) | YOLOX | gt_vehicles | 5 | 2.86 | 24 | 0.913 | 0.957 | 0.871 | 0.954 | 0.904 | 0.909 | 221 | 394 | 240 | 113 | lumana_benchmark_hybridsort_gt_fps5_20260817_083521 |
-| lumana_benchmark | analytics_bytetrack (2022) | YOLO | gt_vehicles | 5 | 1.53 | 24 | 0.949 | **0.990** | 0.910 | **0.985** | 0.941 | 0.908 | 284 | 433 | 367 | 34 | lumana_benchmark_analytics_bytetrack_gt_fps5_20260817_083521 |
-| lumana_benchmark | analytics_bytetrack_plus (2022) | YOLO | gt_vehicles | 5 | 2.38 | 24 | **0.956** | 0.987 | **0.926** | 0.983 | **0.952** | 0.910 | 298 | 465 | 360 | 41 | lumana_benchmark_analytics_bytetrack_plus_gt_fps5_20260817_083521 |
-| lumana_benchmark | botsort (2022) | YOLOX | gt_vehicles | 5 | **1.37** | 24 | 0.922 | 0.979 | 0.869 | 0.983 | 0.907 | 0.793 | 822 | 430 | **455** | **0** | lumana_benchmark_botsort_gt_fps5_20260817_083521 |
+| lumana_benchmark | fasttracker (2025) | YOLOX | gt_vehicles | 5 | 1.74 | 24 | 0.892 | 0.901 | 0.885 | 0.934 | 0.915 | 0.878 | 355 | 458 | 329 | 51 | lumana_benchmark_fasttracker_gt_fps5_20260915_123954 |
+| lumana_benchmark | ocsort (2023) | YOLOX | gt_vehicles | 5 | 1.97 | 24 | 0.927 | 0.959 | 0.896 | 0.956 | 0.921 | 0.917 | **185** | **376** | 244 | 113 | lumana_benchmark_ocsort_gt_fps5_20260915_123954 |
+| lumana_benchmark | hybridsort (2024) | YOLOX | gt_vehicles | 5 | 3.03 | 24 | 0.913 | 0.957 | 0.871 | 0.954 | 0.904 | 0.909 | 221 | 394 | 240 | 113 | lumana_benchmark_hybridsort_gt_fps5_20260915_123954 |
+| lumana_benchmark | analytics_bytetrack (2022) | YOLO | gt_vehicles | 5 | 1.50 | 24 | 0.949 | **0.990** | 0.910 | **0.985** | 0.941 | 0.908 | 284 | 433 | 367 | 34 | lumana_benchmark_analytics_bytetrack_gt_fps5_20260915_123954 |
+| lumana_benchmark | analytics_bytetrack_plus (2022) | YOLO | gt_vehicles | 5 | 2.42 | 24 | **0.956** | 0.987 | 0.926 | 0.983 | 0.952 | 0.910 | 298 | 465 | 360 | 41 | lumana_benchmark_analytics_bytetrack_plus_gt_fps5_20260915_123954 |
+| lumana_benchmark | analytics_bytetrack_plus_aug19 (2026) | YOLO | gt_vehicles | 5 | 2.07 | 24 | 0.952 | 0.971 | **0.933** | 0.968 | **0.953** | **0.930** | 219 | 428 | 279 | 90 | lumana_benchmark_analytics_bytetrack_plus_aug19_gt_fps5_20260915_123954 |
+| lumana_benchmark | botsort (2022) | YOLOX | gt_vehicles | 5 | **1.38** | 24 | 0.922 | 0.979 | 0.869 | 0.983 | 0.907 | 0.793 | 822 | 430 | **455** | **0** | lumana_benchmark_botsort_gt_fps5_20260915_123954 |
+
+## Notes
+
+- **`--fps` eval.** When tracking at a target FPS, TrackEval GT is filtered to the same kept frames as the tracker (skipped frames do not exist). Full-rate eval is unchanged.
+- **GT oracle.** `gt_vehicles` feeds annotated boxes as detections (association-only). High DetA is expected; gaps are IDSW/Frag/AssA.
+- **IDCons** is mean per-GT modal tracker-ID purity in this repo's TrackEval patch. Other groups may report a different identity metric under a similar name.
 
 ## Metric glossary
 
